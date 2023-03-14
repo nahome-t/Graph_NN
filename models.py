@@ -35,8 +35,7 @@ class GCN(nn.Module):
 class Norm_adj(MessagePassing):
     # Effectively multiplying the feature vectors by the normalized
     # augmented adjacency matrix or effectively a graph convolutional layer
-    # with W set to
-    # identity and no bias
+    # with W set to identity and no bias
 
     # Equivalent to adding self loop to each node, summing over neighbours
     # feature vectors such that two nodes of degree n1, n2 will also be
