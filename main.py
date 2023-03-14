@@ -22,11 +22,16 @@ in_features = data.num_features
 out_features = dataset.num_classes
 depth = 2
 
-if input('GfNN or GCN') == 'GCN':
-    model = GCN(in_features=in_features, out_features=out_features, depth=depth)
+if input('GfNN or GCN: ') == 'GCN':
+    model = GCN(in_features=in_features,
+                out_features=out_features,
+                depth=depth,
+                hidden_layer_size=hidden_layer_size)
 else:
-    model = GfNN(in_features=in_features, out_features=out_features,
-                 k=depth)
+    model = GfNN(in_features=in_features,
+                 out_features=out_features,
+                 k=depth,
+                 hidden_layer_size=hidden_layer_size)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model = model.to(device)
@@ -46,9 +51,9 @@ def train(model, data):
         loss = F.nll_loss(output[data.train_mask], data.y[data.train_mask])
         loss.backward() # Calculates the gradients
         optimizer.step() # Updates the model via gradient descent
-        # test_accuracy(model, data, epoch+1) #+1 because epoch should start
+        test_accuracy(model, data, epoch+1) #+1 because epoch should start
         # from 1
-    test_accuracy(model, data, num_epochs)
+    # test_accuracy(model, data, num_epochs)
 
 def test_accuracy(model, data, epoch_num=None, on_training_data = False):
     # Will test on the remaining data set
