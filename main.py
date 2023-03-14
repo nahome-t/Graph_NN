@@ -15,7 +15,7 @@ learning_rate = 0.01 # Figure out good value?
 
 num_epochs = 50 # Number of epochs over which data will be trained on,
 # should eventually be changed so that it is a variable number which stops
-# once 100% accuracy reached in training data
+# once 100% accuracy reached in training data, or we reach some max limit
 
 hidden_layer_size = 16 # Size of hidden convolution layers (all same size)
 in_features = data.num_features
