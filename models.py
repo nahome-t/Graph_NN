@@ -7,6 +7,12 @@ import torch.functional as F
 
 
 class GCN(nn.Module):
+
+    # Creates a GCN of arbitrary depth, note the first layer goes from
+    # in_features->hidden_layer_size, each subsequent layer from there on
+    # keeps the same hidden layer size until the final layer which maps to
+    # the number of features you want to update (7 in the case of Cora)
+
     def __init__(self, in_features, out_features, hidden_layer_size, depth=2):
         super().__init__()
         self.in_conv = GCNConv(in_features, hidden_layer_size)
