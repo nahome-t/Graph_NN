@@ -65,7 +65,9 @@ class Norm_adj(MessagePassing):
         return out
 
     def message(self, x_j, norm):
-        return norm.view(-1, 1) * x_j # Normalizes value by node number
+        return norm.view(-1, 1) * x_j # Normalizes value by normalisation
+        # constant calculated in forward layer, note the view method insures
+        # the tensor has the correct shap
 
 
 
