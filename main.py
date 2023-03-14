@@ -55,7 +55,7 @@ def train(model, data):
         # from 1
     # test_accuracy(model, data, num_epochs)
 
-def test_accuracy(model, data, epoch_num=None, on_training_data = False):
+def test_accuracy(model, data, epoch_num=None, on_training_data = True):
     # Will test on the remaining data set
     if epoch_num == 0:
         print('CHECKING ACCURACY ON TRAINING DATA') if on_training_data else \
