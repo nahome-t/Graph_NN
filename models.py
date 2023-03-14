@@ -70,5 +70,30 @@ class Norm_adj(MessagePassing):
         # the tensor has the correct shap
 
 
+class GfNN(nn.Module):
+    # Implementation of gfNN as shown in https://arxiv.org/pdf/1905.09550.pdf
+    # with difference being log_softmax being applied instead of softmax.
+    # Note also we have that the augmented normalised adjacency matrix is
+    # applied k times
+    def __init__(self, in_features, hidden_layer_size, out_features, k):
+        super().__init__()
+        self.conv1 = GCNConv(in_features, hidden_layer_size)
+        self.classifier = nn.Linear(in_features=hidden_layer_size,
+                                out_features=out_features, bias=False)
+        self.adj = Norm_adj()
+        #
+        self.k = k
 
+    def forward(self, data):
+        h, edge_index = data.x, data.edge_index
+
+        # Note the adjacency layer applied k-1 times as the following
+        # convolutional layer is equivalent to an adjacency layer followed by a
+        # linear layer
+        for _ in range(self.k-1):
+            h = self.adj(h, edge_index)  # Can be applied multiple times
+        h = self.conv1(h, edge_index)
+        h = F.relu(h)
+        h = self.classifier(h)
+        return F.log_softmax(h, dim=1)
 
