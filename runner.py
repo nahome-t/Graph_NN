@@ -63,10 +63,10 @@ def generate_mask(data, mask):
     return torch.tensor(test_mask)
 
 
-def is_consistent(model, data, mask):
+def is_consistent(model, data):
     # Returns true if the model perfectly predicts the data, otherwise
     # returns false
-
+    mask = data.train_mask
     model.eval()
     with torch.no_grad():
         test_num = mask.sum()
