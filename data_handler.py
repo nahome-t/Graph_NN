@@ -1,30 +1,36 @@
 # Contains functions used to read and write data
 import torch
 import numpy as np
+from os.path import exists
 
-def generate_mask(data, mask):
+def generate_mask(data_y, mask, group_size=20, num_classes=7, name="Cora"):
+    # Picks group_size*num_classes examples from the testing data such that
+    # each class is appears group_size times (assuming it can find that many)
 
-    # First
-    # Picks 140 examples from the testing data such that each class is
-    # picked 20 times, note the testing data is only a subset of the entire
-    # data and so the mask for the testing data needs to be given
+    if exists(f'benchmark_mask:{name}.npy') == True
+        print('Loading, benchmark mask, already exists...')
+        return torch.from_numpy(np.load('benchmark_mask:{name}'))
 
-    # NOTE CLASS SIZE OF 20 SPECIFICALLY GEARED TOWARDS CORA DATASET
-
-    CLASS_SIZE = 20
-
-    data = data.tolist()
+    data_y = data_y.tolist()
     mask = mask.tolist()
-    test_mask = [False] * len(data)
+    test_mask = [False] * len(data_y)
     freq = {}
-    for i in range(7):
+
+    # Initialises dictionary which will count how many of each class there is
+    # so that we stop once we reach group size
+    for i in range(num_classes):
         freq[i] = 0
 
-    for i, x in enumerate(data):
-        if mask[i] and freq[x] < CLASS_SIZE:
+    # Goes through the y values for the data and adds it to benchmark_mask if
+    # it is in the mask given and we the number of that class is under the
+    # group size we want to find
+    for i, x in enumerate(data_y):
+        # Only includes data that is in training data
+        if mask[i] and freq[x] < group_size:
             freq[x] += 1
             test_mask[i] = True
 
+    np.save(file=f'benchmark_mask:{name}', arr=np.array(test_mask))
     return torch.tensor(test_mask)
 
 
