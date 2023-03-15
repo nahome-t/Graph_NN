@@ -1,8 +1,7 @@
 from torch_geometric.datasets import Planetoid
 import torch
-
 import torch.nn.functional as F
-
+import numpy as np
 from models import GCN, GfNN
 
 
@@ -64,8 +63,8 @@ def generate_mask(data, mask):
 
 
 def is_consistent(model, data):
-    # Returns true if the model perfectly predicts the data, otherwise
-    # returns false
+    # Returns true if the model perfectly predicts the training data for a
+    # dataset which can be filtered from entire dataset using dataset.mask()[]
     mask = data.train_mask
     model.eval()
     with torch.no_grad():
@@ -89,7 +88,7 @@ def train2(model, data, mask):
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     model.train()
     for i in range(max_epochs):
-        if is_consistent(model=model, data=data, mask=data.train_mask) == True:
+        if is_consistent(model=model, data=data) == True:
             print(f'A model with 100% accuracy was found at epoch {i}')
             with torch.no_grad():
                 return model(data)[mask].argmax(dim=1)
@@ -110,14 +109,17 @@ def train2(model, data, mask):
     return train2(model, data, mask)
 
 
-def run_simulation(filename):
-    return None
+def run_simulation():
 
-    # test_mask = generate_mask(data.y, data.test_mask)
-    #
-    # test_size = 40  # How many times do we want to run each test
-    # for k in range(test_size):
-    #     model = model.to(device)
-    #     train2(model, data, test_mask)
+    test_mask = generate_mask(data.y, data.test_mask)
+    test_size = 1  # How many times do we want to run each test
+    for k in range(test_size):
+        model = generate_model(GNN_type='GCN', depth=2)
+        model = model.to(device)
+        arr = train2(model, data, test_mask).detach().cpu().numpy()
+        arr = np.transpose(arr)
+        print(arr.dtype)
+        np.savetxt('tensor', arr, delimiter=',', fmt='%d')
 
 
+run_simulation()
