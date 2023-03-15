@@ -3,6 +3,8 @@ import torch
 import torch.nn.functional as F
 import numpy as np
 from models import GCN, GfNN
+import time
+from data_handler import is_consistent, generate_mask
 
 
 learning_rate = 0.01 # Figure out good value?
@@ -33,50 +35,6 @@ def generate_model(GNN_type, depth):
     return model.to(device)
 
 
-
-def generate_mask(data, mask):
-    # Picks 140 examples from the testing data such that each class is
-    # picked 20 times, note the testing data is only a subset of the entire
-    # data and so the mask for the testing data needs to be given
-
-    # NOTE CLASS SIZE OF 20 SPECIFICALLY GEARED TOWARDS CORA DATASET
-
-    CLASS_SIZE = 20
-
-    data = data.tolist()
-    mask = mask.tolist()
-    test_mask = [False]*len(data)
-    freq = {}
-    for i in range(7):
-        freq[i] = 0
-
-    for i, x in enumerate(data):
-        if mask[i] and freq[x]<CLASS_SIZE:
-            freq[x]+=1
-            test_mask[i] = True
-
-
-    # indicies = [i for i in range(len(data)) if test_mask[i] == True]
-    # print('Test indicies')
-
-    return torch.tensor(test_mask)
-
-
-def is_consistent(model, data):
-    # Returns true if the model perfectly predicts the training data for a
-    # dataset which can be filtered from entire dataset using dataset.mask()[]
-    mask = data.train_mask
-    model.eval()
-    with torch.no_grad():
-        test_num = mask.sum()
-        prediction = model(data).argmax(dim=1)
-        correct = (prediction[mask] == data.y[mask]).sum()
-        if int(correct) == mask.sum():
-            return True
-        else:
-            return False
-
-    model.train()  # Sets it back to training mode by default
 
 
 def train2(model, data, mask):
@@ -110,16 +68,21 @@ def train2(model, data, mask):
 
 
 def run_simulation():
-
+    start_time = time.time()
+    # Generates test mask, although
     test_mask = generate_mask(data.y, data.test_mask)
-    test_size = 1  # How many times do we want to run each test
+    test_size = 3000  # How many times do we want to run each test
+    aggr = np.zeros((test_size, test_mask.sum()))
     for k in range(test_size):
         model = generate_model(GNN_type='GCN', depth=2)
-        model = model.to(device)
         arr = train2(model, data, test_mask).detach().cpu().numpy()
         arr = np.transpose(arr)
-        print(arr.dtype)
-        np.savetxt('tensor', arr, delimiter=',', fmt='%d')
+        aggr[k, :] = arr
+        print(f'Done {k + 1}/{test_size}')
+    np.savetxt('tensor', np.array(aggr), delimiter=',', fmt='%d')
 
 
+    print(f'It took {time.time()-start_time} to finish this program and '
+          f'generate {test_size} Neural networks')
 run_simulation()
+

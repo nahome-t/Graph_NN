@@ -1,15 +1,11 @@
 from torch_geometric.datasets import Planetoid
 import torch
-import torch.nn as nn
-from torch_geometric.nn import GCNConv, MessagePassing
-from torch_geometric.utils import add_self_loops, degree
 import torch.nn.functional as F
 from models import GCN, GfNN
 
 dataset = Planetoid(root='/tmp/Cora', name='Cora')
 data = dataset[0] # Only one graph in this particular dataset so we just need
 # to load the first element
-
 
 learning_rate = 0.01 # Figure out good value?
 
@@ -36,7 +32,6 @@ else:
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model = model.to(device)
 data = data.to(device)
-
 
 def train(model, data):
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
