@@ -2,6 +2,7 @@ from torch_geometric.datasets import Planetoid
 import torch
 import torch.nn.functional as F
 from models import GCN, GfNN
+from data_handler import test_accuracy
 
 dataset = Planetoid(root='/tmp/Cora', name='Cora')
 data = dataset[0] # Only one graph in this particular dataset so we just need
@@ -33,6 +34,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model = model.to(device)
 data = data.to(device)
 
+
 def train(model, data):
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     model.train()
@@ -49,26 +51,6 @@ def train(model, data):
         test_accuracy(model, data, epoch+1) #+1 because epoch should start
         # from 1
     # test_accuracy(model, data, num_epochs)
-
-def test_accuracy(model, data, epoch_num=None, on_training_data = True):
-    # Will test on the remaining data set
-    if epoch_num == 0:
-        print('CHECKING ACCURACY ON TRAINING DATA') if on_training_data else \
-            print('CHECKING ACCURACY ON TESTING DATA')
-    mask = data.train_mask if on_training_data else data.test_mask  # Masks
-    # are pytorch tensors which are of the form [True, True, False,
-    # ....] which such that the train_mask and test_mask filters the data by
-    # training and testing data
-
-    model.eval()
-    with torch.no_grad():
-        test_num = mask.sum()
-        prediction = model(data).argmax(dim=1)
-        correct = (prediction[mask] == data.y[mask]).sum()
-        acc = int(correct)/test_num
-        print(f'Epoch num: {epoch_num}, Accuracy {acc:.2f}, i.e. {correct}'
-              f'/{test_num}')
-    model.train()
 
 
 train(model=model, data=data)

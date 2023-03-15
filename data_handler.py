@@ -54,3 +54,23 @@ def is_consistent(model, data):
             return False
 
     model.train()  # Sets it back to training mode by default
+
+def test_accuracy(model, data, epoch_num=None, on_training_data = True):
+    # Will test on the remaining data set
+    if epoch_num == 0:
+        print('CHECKING ACCURACY ON TRAINING DATA') if on_training_data else \
+            print('CHECKING ACCURACY ON TESTING DATA')
+    mask = data.train_mask if on_training_data else data.test_mask  # Masks
+    # are pytorch tensors which are of the form [True, True, False,
+    # ....] which such that the train_mask and test_mask filters the data by
+    # training and testing data
+
+    model.eval()
+    with torch.no_grad():
+        test_num = mask.sum()
+        prediction = model(data).argmax(dim=1)
+        correct = (prediction[mask] == data.y[mask]).sum()
+        acc = int(correct)/test_num
+        print(f'Epoch num: {epoch_num}, Accuracy {acc:.2f}, i.e. {correct}'
+              f'/{test_num}')
+    model.train()
