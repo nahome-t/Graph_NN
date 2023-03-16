@@ -46,7 +46,7 @@ def train2(model, data, mask):
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     model.train()
     for i in range(max_epochs):
-        if is_consistent(model=model, data=data) == True:
+        if is_consistent(model=model, data=data):
             print(f'A model with 100% accuracy was found at epoch {i}')
             with torch.no_grad():
                 return model(data)[mask].argmax(dim=1)
@@ -67,10 +67,11 @@ def train2(model, data, mask):
     return train2(model, data, mask)
 
 
-def run_simulation():
+def run_simulation(dataset_name):
     start_time = time.time()
-    # Generates test mask, although
-    test_mask = generate_mask(data.y, data.test_mask)
+    # Generates mask, or loads it if int can find
+    test_mask = generate_mask(data_y=data.y, mask=data.test_mask, name=dataset_name)
+
     test_size = 3000  # How many times do we want to run each test
     aggr = np.zeros((test_size, test_mask.sum()))
     for k in range(test_size):
@@ -81,8 +82,8 @@ def run_simulation():
         print(f'Done {k + 1}/{test_size}')
     np.savetxt('tensor', np.array(aggr), delimiter=',', fmt='%d')
 
-
     print(f'It took {time.time()-start_time} to finish this program and '
           f'generate {test_size} Neural networks')
+
 run_simulation()
 
