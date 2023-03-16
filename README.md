@@ -14,14 +14,10 @@ From a graph signal processing perspective the research shows that repeatedly ap
 - Model file contains the structure of both the regular neural neural network and the GfNN, also contains code defining the message passing layer
 - Data Handler contains functions related to processing and recording the data, i.e. produces the mask which will show the dataset that we will test our neural networks on, will look at stored tensors and count the occurence of the 'functions' which are defined by their performance on the test set and can check as to whether some data is consistent with the data or the accuracy of a model
 - Main just used if you want to run the neural network a single time and train it on the Cora dataset, will offer you choice in what type, configured so that it will be trained, can be used as a means of testing whether a particular GNN behaves well
-- Runner is the code that will eventually be run the entire thing, for now will
+- Runner is the code that will eventually be run on computer, will keep generating neural networks then looks at output on benchmark dataset, defined by benchmark_mask. Can currently run a test a specified amount of times and output the results into a file, can also download the file and look at how often each tensor or 'function' appears
 
 # Stuff to-do
 - Change gfNN so that same number of liner layer follows the adjacency layer 
 as only layers of same length can be directly compared
-- Create a system for managing tensor files if multiple are created, maybe 
-  check to see if tensor_k is present if not try load data into tensor_k+1, 
-  also make sure that data contains
-- Try speed up adjacency or message passing layer in neural network, 
-  currently runs around 6x slower than likely by editing GCNconv layer, 
-  removing the linear and bias part
+- Create a system for managing tensor files if multiple are created, maybe check to see if tensor_k is present if not try load data into tensor_k+1, also make sure that data contains a header or some sort of external data that will show how often each data point appears
+- Try speed up adjacency or message passing layer in neural network, currently runs around 6x slower than the regular convolutional layer, improve by editing GCNconv layer, removing the linear and bias part
