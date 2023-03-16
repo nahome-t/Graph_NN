@@ -2,14 +2,16 @@
 import torch
 import numpy as np
 from os.path import exists
+from torch_geometric.datasets import Planetoid
 
 def generate_mask(data_y, mask, group_size=20, num_classes=7, name="Cora"):
-    # Picks group_size*num_classes examples from the testing data such that
-    # each class is appears group_size times (assuming it can find that many)
+    # Picks group_size*num_classes examples from the data within the mask
+    # given such that such tha each class is appears group_size times (
+    # assuming it can find that many)
 
-    if exists(f'benchmark_mask:{name}.npy') == True
+    if exists(f'benchmark_mask:{name}.npy'):
         print('Loading, benchmark mask, already exists...')
-        return torch.from_numpy(np.load('benchmark_mask:{name}'))
+        return torch.from_numpy(np.load(f'benchmark_mask:{name}.npy'))
 
     data_y = data_y.tolist()
     mask = mask.tolist()
@@ -35,8 +37,8 @@ def generate_mask(data_y, mask, group_size=20, num_classes=7, name="Cora"):
 
 
 def count_frequency(filename='tensor'):
-    # Gets file, changes it into 2D numpy tensor and effectively counts how
-    # often each row or 'function' occurs
+    # Gets  data from file, changes it into 2D numpy tensor and effectively
+    # counts how often each row or 'function' occurs
     tensor = np.loadtxt(fname=filename, delimiter=',')
     dt = np.dtype((np.void, tensor.dtype.itemsize * tensor.shape[1]))
     b = np.ascontiguousarray(tensor).view(dt)
