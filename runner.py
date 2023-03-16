@@ -40,7 +40,7 @@ def generate_model(GNN_type, depth):
 def train2(model, data, mask):
     # A slightly altered training method, model is trained to 100% accuracy
     # on training data, this model is then applied to the mask given by one
-    # of the parameters (in this case the generated test mask, the output of
+    # of the parameters (in this case the generated test mask), the output of
     # this is then outputted
 
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
@@ -62,28 +62,39 @@ def train2(model, data, mask):
 
     model.eval()
 
-    print(f'Model not found...')
+    print(f'Model not found... trying again')
     # Tries again to find it if function not found within 50 epochs
     return train2(model, data, mask)
 
 
-def run_simulation(dataset_name):
+def run_simulation(dataset_name, train_it, test_num, model_type, model_depth):
+    #runs model multiple
+
+    # dataset_name: in case of cora just 'cora'
+    # train_it: True/False whether we want to train neural network before
+    # applying it to dataset
+    # test size: the amount of times we want to apply our model to generated
+    # neural network
+    # model_type: 'GCN' or 'GfNN'
+    # model_depth: depth of neural network
+
+
     start_time = time.time()
     # Generates mask, or loads it if int can find
     test_mask = generate_mask(data_y=data.y, mask=data.test_mask, name=dataset_name)
 
-    test_size = 3000  # How many times do we want to run each test
-    aggr = np.zeros((test_size, test_mask.sum()))
-    for k in range(test_size):
+    # Stores the result of test
+    aggr = np.zeros((test_num, test_mask.sum()))
+    for k in range(test_num):
         model = generate_model(GNN_type='GCN', depth=2)
         arr = train2(model, data, test_mask).detach().cpu().numpy()
         arr = np.transpose(arr)
         aggr[k, :] = arr
-        print(f'Done {k + 1}/{test_size}')
+        print(f'Done {k + 1}/{test_num}')
     np.savetxt('tensor', np.array(aggr), delimiter=',', fmt='%d')
 
     print(f'It took {time.time()-start_time} to finish this program and '
-          f'generate {test_size} Neural networks')
+          f'generate {test_num} Neural networks')
 
 run_simulation()
 

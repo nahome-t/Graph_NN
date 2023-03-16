@@ -17,7 +17,7 @@ num_epochs = 50 # Number of epochs over which data will be trained on,
 hidden_layer_size = 16 # Size of hidden convolution layers (all same size)
 in_features = data.num_features
 out_features = dataset.num_classes
-depth = 2
+depth = int(input('Enter the depth of neural network: '))
 
 if input('GfNN or GCN: ') == 'GCN':
     model = GCN(in_features=in_features,

@@ -7,7 +7,6 @@ import torch.nn.functional as F
 
 
 class GCN(nn.Module):
-
     # Creates a GCN of arbitrary depth, note the first layer goes from
     # in_features->hidden_layer_size, each subsequent layer from there on
     # keeps the same hidden layer size until the final layer which maps to
@@ -27,7 +26,7 @@ class GCN(nn.Module):
         h = F.relu(h)
         for conv in self.convs:
             h = conv(h, edge_index)
-            h = F.Relu(h)
+            h = F.relu(h)
         h = self.out_conv(h, edge_index)
         return F.log_softmax(h, dim=1)
 
@@ -80,7 +79,7 @@ class GfNN(nn.Module):
         self.classifier = nn.Linear(in_features=hidden_layer_size,
                                 out_features=out_features, bias=False)
         self.adj = Norm_adj()
-        #
+        # Add a series of Linear layers so that they're equal
         self.k = k
 
     def forward(self, data):
