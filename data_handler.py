@@ -1,4 +1,7 @@
 # Contains functions used to read and write data
+from pathlib import Path
+import os.path
+import os
 import torch
 import numpy as np
 from os.path import exists
@@ -91,3 +94,15 @@ def test_accuracy(model, data, epoch_num=None, on_training_data = True):
         print(f'Epoch num: {epoch_num}, Accuracy {acc:.2f}, i.e. {correct}'
               f'/{test_num}')
     model.train()
+
+
+def get_file_name(dataset_name, train_it, model_type, model_depth):
+    # Gets the file name that an output should be saved to given the name of
+    # a dataset, whether its trained or not and the model type or depth
+    extension = f'/output/{dataset_name}' \
+               f'_{"trained" if train_it else "random"}_' \
+            f'{model_type}_{model_depth}'
+    program_path = Path(__file__)
+    fname = str(program_path.parent.absolute()) + extension
+    return fname
+

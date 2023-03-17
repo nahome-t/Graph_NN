@@ -1,10 +1,10 @@
 from torch_geometric.datasets import Planetoid
 import torch
 import torch.nn.functional as F
-import numpy as np
+from os.path import exists
 from models import GCN, GfNN
 import time
-from data_handler import is_consistent, generate_mask, write_to_file
+from data_handler import is_consistent, generate_mask, get_file_name, write_to_file
 
 
 learning_rate = 0.01 # Figure out good value?
@@ -19,8 +19,6 @@ data = dataset[0] # Only one graph in this particular dataset so we just need
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 data = data.to(device)
 
-generated_mask = generate_mask(data_y=data.y, mask=data.train_mask,
-                               group_size=20, num_classes=7, name="Cora")
 
 def generate_model(GNN_type, depth):
     # Generates a model using the dataset in the function and the given
@@ -72,7 +70,7 @@ def train2(model, data, mask):
 def run_simulation(dataset_name, train_it, test_num, model_type, model_depth):
     # runs model multiple
 
-    # dataset_name: in case of cora just 'cora'
+    # dataset_name: in case of cora just 'Cora'
     # train_it: True/False whether we want to train neural network before
     # applying it to dataset
     # test size: the amount of times we want to apply our model to generated
@@ -82,26 +80,32 @@ def run_simulation(dataset_name, train_it, test_num, model_type, model_depth):
     # Potentially use format cora_trained_GFNN_2 or just use a header!!
 
     start_time = time.time()
-    # Generates mask, or loads it if int can find
-    test_mask = generate_mask(data_y=data.y, mask=data.test_mask, name=dataset_name)
+    # Generates mask, or loads it if it exists within file system,
+    generated_mask = generate_mask(data_y=data.y, mask=data.train_mask,
+                                   group_size=20, num_classes=7, name="Cora")
 
-    fname = f'/output/{dataset_name}_{"trained" if train_it else "random"}_' \
-            f'{model_type}_{model_depth}'
+    fname = get_file_name(dataset_name, train_it, model_type,
+                                       model_depth)
+
+    # Creates file if it doesn't exist
+    if not exists(fname):
+        open(fname, "x")
     for k in range(test_num):
-        # CURRENTLY DOESN'T INCORPORATE DIFFERENT TYPES OF NEURAL NET
-        model = generate_model(GNN_type='GCN', depth=2)
-        # NOTE THIS IS ONLY MEANT TO BE IN THE CASE WHERE WE TRAIN IT ALSO
-        # SHOULD MASK BE TEST MASK OR GENERATED???
+        model = generate_model(GNN_type=model_type, depth=model_depth)
+        # If we want our test to train neural network it'll train it,
+        # otherwise it'll just apply our model to data
         if train_it:
-            arr = train2(model, data, test_mask).detach().cpu().numpy()
+            arr = train2(model, data, generated_mask).detach().cpu().numpy()
         else:
-            # arr = model(data.y, data.edge_index)
+            arr = model(data)[generated_mask].detach().cpu().numpy()
 
         print(f'Done {k + 1}/{test_num}')
         write_to_file(arr, fname)
 
     print(f'It took {time.time()-start_time} to finish this program and '
-          f'generate {test_num} Neural networks')
+          f'generate {test_num} '
+          f'{"trained" if train_it else "random"} neural networks')
 
-run_simulation()
 
+run_simulation(dataset_name="Cora", train_it=True, test_num=10,
+               model_type='GCN', model_depth=2)

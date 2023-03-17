@@ -72,6 +72,8 @@ class NormAdj(MessagePassing):
 
 
 class GfNN(nn.Module):
+    # WORK NEEDS TO BE DONE ON THIS!!!!!!!!!!
+
     # Implementation of gfNN as shown in https://arxiv.org/pdf/1905.09550.pdf
     # with difference being log_softmax being applied instead of softmax.
     # Note also we have that the augmented normalised adjacency matrix is
@@ -81,7 +83,7 @@ class GfNN(nn.Module):
     # layer, overall we want effectively k-1 pure adj, then 1 conv which is
     # effectively an adj and a linear, then then k-1 pure linear layers,
     # k-2 that go from hidden layer to hidden layer and one that goes from
-    # linear to output
+    # linear to output number of dimensions
     def __init__(self, in_features, hidden_layer_size, out_features, k):
         super().__init__()
         self.conv1 = GCNConv(in_features, hidden_layer_size)
