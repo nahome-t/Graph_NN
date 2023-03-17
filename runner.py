@@ -36,7 +36,6 @@ def generate_model(GNN_type, depth):
 
 
 
-
 def train2(model, data, mask):
     # A slightly altered training method, model is trained to 100% accuracy
     # on training data, this model is then applied to the mask given by one
@@ -68,7 +67,7 @@ def train2(model, data, mask):
 
 
 def run_simulation(dataset_name, train_it, test_num, model_type, model_depth):
-    #runs model multiple
+    # runs model multiple
 
     # dataset_name: in case of cora just 'cora'
     # train_it: True/False whether we want to train neural network before
@@ -77,7 +76,7 @@ def run_simulation(dataset_name, train_it, test_num, model_type, model_depth):
     # neural network
     # model_type: 'GCN' or 'GfNN'
     # model_depth: depth of neural network
-
+    # Potentially use format cora_trained_GFNN_2 or just use a header!!
 
     start_time = time.time()
     # Generates mask, or loads it if int can find

@@ -36,10 +36,10 @@ def generate_mask(data_y, mask, group_size=20, num_classes=7, name="Cora"):
     return torch.tensor(test_mask)
 
 
-def count_frequency(filename='tensor'):
+def count_frequency(filename='tensor2'):
     # Gets  data from file, changes it into 2D numpy tensor and effectively
     # counts how often each row or 'function' occurs
-    tensor = np.loadtxt(fname=filename, delimiter=',')
+    tensor = np.loadtxt(fname=filename, delimiter=',', )
     dt = np.dtype((np.void, tensor.dtype.itemsize * tensor.shape[1]))
     b = np.ascontiguousarray(tensor).view(dt)
     unq, cnt = np.unique(b, return_counts=True)
@@ -62,6 +62,15 @@ def is_consistent(model, data):
             return False
 
     model.train()  # Sets it back to training mode by default
+
+def write_to_file(arr, fpath):
+    # Takes in a 1d np array and then adds it to a csv as a row
+    # arr = np.reshape(arr, (-1, 1))
+    # print(np.reshape(arr, (-1, 1)))
+    arr = np.reshape(arr, (1, -1))
+    print(arr)
+    with open(fpath, 'ab') as file:
+        np.savetxt(fname=file, X=arr, delimiter=",", fmt='%d')
 
 def test_accuracy(model, data, epoch_num=None, on_training_data = True):
     # Will test on the remaining data set

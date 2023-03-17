@@ -1,3 +1,5 @@
+from abc import ABC
+
 import torch.nn as nn
 from torch import matmul, zeros
 from torch_geometric.nn import GCNConv, MessagePassing
@@ -18,7 +20,8 @@ class GCN(nn.Module):
         self.convs = nn.ModuleList(
             [GCNConv(hidden_layer_size, hidden_layer_size) for _
              in range(depth - 2)])
-        self.out_conv = GCNConv(hidden_layer_size, out_features)
+        self.out_conv = GCNConv(in_channels=hidden_layer_size,
+                                out_channels=out_features, bias=False)
 
     def forward(self, data):
         h, edge_index = data.x, data.edge_index
@@ -31,7 +34,7 @@ class GCN(nn.Module):
         return F.log_softmax(h, dim=1)
 
 
-class Norm_adj(MessagePassing):
+class NormAdj(MessagePassing):
     # Effectively multiplying the feature vectors by the normalized
     # augmented adjacency matrix or effectively a graph convolutional layer
     # with W set to identity and no bias
@@ -41,7 +44,7 @@ class Norm_adj(MessagePassing):
     # normalised by (n1*n2)^(-0.5)
 
     def __init__(self):
-        super().__init__(aggr='add') # Aggregates via adding
+        super().__init__(aggr='add')  # Aggregates via adding
 
     def forward(self, x, edge_index):
         # Adds self loops
@@ -73,12 +76,21 @@ class GfNN(nn.Module):
     # with difference being log_softmax being applied instead of softmax.
     # Note also we have that the augmented normalised adjacency matrix is
     # applied k times
+
+    #adj^k times then linear then relu then linear then relu etc until last
+    # layer, overall we want effectively k-1 pure adj, then 1 conv which is
+    # effectively an adj and a linear, then then k-1 pure linear layers,
+    # k-2 that go from hidden layer to hidden layer and one that goes from
+    # linear to output
     def __init__(self, in_features, hidden_layer_size, out_features, k):
         super().__init__()
         self.conv1 = GCNConv(in_features, hidden_layer_size)
+        # self.linear_layers = nn.ModuleList([nn.Linear(
+        #     in_features=hidden_layer_size, out_features=hidden_layer_size)
+        #     for _ in range(k-2)])
         self.classifier = nn.Linear(in_features=hidden_layer_size,
                                 out_features=out_features, bias=False)
-        self.adj = Norm_adj()
+        self.adj = NormAdj()
         # Add a series of Linear layers so that they're equal
         self.k = k
 
