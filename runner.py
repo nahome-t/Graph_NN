@@ -4,7 +4,7 @@ import torch.nn.functional as F
 import numpy as np
 from models import GCN, GfNN
 import time
-from data_handler import is_consistent, generate_mask
+from data_handler import is_consistent, generate_mask, write_to_file
 
 
 learning_rate = 0.01 # Figure out good value?
@@ -18,6 +18,9 @@ data = dataset[0] # Only one graph in this particular dataset so we just need
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 data = data.to(device)
+
+generated_mask = generate_mask(data_y=data.y, mask=data.train_mask,
+                               group_size=20, num_classes=7, name="Cora")
 
 def generate_model(GNN_type, depth):
     # Generates a model using the dataset in the function and the given
@@ -33,7 +36,6 @@ def generate_model(GNN_type, depth):
                     k=depth,
                     hidden_layer_size=hidden_layer_size)
     return model.to(device)
-
 
 
 def train2(model, data, mask):
@@ -61,8 +63,9 @@ def train2(model, data, mask):
 
     model.eval()
 
-    print(f'Model not found... trying again')
-    # Tries again to find it if function not found within 50 epochs
+    print(f'Model not found within max epochs: {max_epochs} ... trying again')
+    # Tries again to find it if function not found within 50 epochs, actually
+    # this wont try a
     return train2(model, data, mask)
 
 
@@ -82,15 +85,20 @@ def run_simulation(dataset_name, train_it, test_num, model_type, model_depth):
     # Generates mask, or loads it if int can find
     test_mask = generate_mask(data_y=data.y, mask=data.test_mask, name=dataset_name)
 
-    # Stores the result of test
-    aggr = np.zeros((test_num, test_mask.sum()))
+    fname = f'/output/{dataset_name}_{"trained" if train_it else "random"}_' \
+            f'{model_type}_{model_depth}'
     for k in range(test_num):
+        # CURRENTLY DOESN'T INCORPORATE DIFFERENT TYPES OF NEURAL NET
         model = generate_model(GNN_type='GCN', depth=2)
-        arr = train2(model, data, test_mask).detach().cpu().numpy()
-        arr = np.transpose(arr)
-        aggr[k, :] = arr
+        # NOTE THIS IS ONLY MEANT TO BE IN THE CASE WHERE WE TRAIN IT ALSO
+        # SHOULD MASK BE TEST MASK OR GENERATED???
+        if train_it:
+            arr = train2(model, data, test_mask).detach().cpu().numpy()
+        else:
+            # arr = model(data.y, data.edge_index)
+
         print(f'Done {k + 1}/{test_num}')
-    np.savetxt('tensor', np.array(aggr), delimiter=',', fmt='%d')
+        write_to_file(arr, fname)
 
     print(f'It took {time.time()-start_time} to finish this program and '
           f'generate {test_num} Neural networks')

@@ -23,5 +23,11 @@ The first part of the project involves looking at the frequency at which certain
 # Stuff to-do
 - Change gfNN so that same number of liner layer follows the adjacency layer 
 as only layers of same length can be directly compared
-- Create a system for managing tensor files if multiple are created, maybe check to see if tensor_k is present if not try load data into tensor_k+1, also make sure that data contains a header or some sort of external data that will show how often each data point appears
+- Create a system for managing tensor files if multiple are created, maybe 
+  check to see if tensor_k is present if not try load data into tensor_k+1, 
+  also make sure that data contains a header or some sort of external data 
+  that will show how often each data point appears (maybe solved?)
 - Try speed up adjacency or message passing layer in neural network, currently runs around 6x slower than the regular convolutional layer, improve by editing GCNconv layer, removing the linear and bias part
+- Runner currently doesn't actually use inputs correctly, improve on that
+- Train2 currently would need to reset parameters of GNN, need to figure out 
+  how to do that
