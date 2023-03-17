@@ -11,7 +11,6 @@ learning_rate = 0.01 # Figure out good value?
 max_epochs = 50 # Model trained to 100% accuracy on training dataset,
 # maximum epochs represents
 hidden_layer_size = 16
-GNN_type = 'GCN'
 dataset = Planetoid(root='/tmp/Cora', name='Cora')
 data = dataset[0] # Only one graph in this particular dataset so we just need
 # to load the first element
@@ -36,7 +35,7 @@ def generate_model(GNN_type, depth):
     return model.to(device)
 
 
-def train2(model, data, mask):
+def train2_perf(model, data, mask):
     # A slightly altered training method, model is trained to 100% accuracy
     # on training data, this model is then applied to the mask given by one
     # of the parameters (in this case the generated test mask), the output of
@@ -63,8 +62,9 @@ def train2(model, data, mask):
 
     print(f'Model not found within max epochs: {max_epochs} ... trying again')
     # Tries again to find it if function not found within 50 epochs, actually
-    # this wont try a
-    return train2(model, data, mask)
+    # this won't try and find one from scratch as the model has some
+    # effectively learnt parameters that would need to be reset
+    return train2_perf(model, data, mask)
 
 
 def run_simulation(dataset_name, train_it, test_num, model_type, model_depth):
@@ -95,7 +95,7 @@ def run_simulation(dataset_name, train_it, test_num, model_type, model_depth):
         # If we want our test to train neural network it'll train it,
         # otherwise it'll just apply our model to data
         if train_it:
-            arr = train2(model, data, generated_mask).detach().cpu().numpy()
+            arr = train2_perf(model, data, generated_mask).detach().cpu().numpy()
         else:
             arr = model(data)[generated_mask].detach().cpu().numpy()
 

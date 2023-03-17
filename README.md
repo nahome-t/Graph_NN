@@ -6,13 +6,10 @@ From a graph signal processing perspective the research shows that repeatedly ap
 
 The first part of the project involves looking at the frequency at which certain functions occur in both when the GfNN or GNN when it has weights which are randomly selected and when each model is trained to 100% accuracy. Here a function is defind by how it performs in a generated dataset.
 
-
-
-
 # Structure of project
 - Stage 1 initialise GCN layers randomly and produce a rank vs probability plot in order to see how often certain functions appear, do investigation for GNN of depths 2 and 10 
 - Stage 2 Train GCN such that it reaches 100% accuracy on trainning data then test it on testing data, then effectively redo
-- to be continued...
+- maybe more...
 
 # Structure of program
 - Model file contains the structure of both the regular neural neural network and the GfNN, also contains code defining the message passing layer
@@ -23,9 +20,6 @@ The first part of the project involves looking at the frequency at which certain
 # Stuff to-do
 - Change gfNN so that same number of liner layer follows the adjacency layer 
 as only layers of same length can be directly compared
-- Create a system for managing tensor files if multiple are created, maybe 
-  check to see if tensor_k is present if not try load data into tensor_k+1, 
-  also make sure that data contains a header or some sort of external data 
   that will show how often each data point appears (maybe solved?)
 - Try speed up adjacency or message passing layer in neural network, currently runs around 6x slower than the regular convolutional layer, improve by editing GCNconv layer, removing the linear and bias part
 - Runner currently doesn't actually use inputs correctly, improve on that
