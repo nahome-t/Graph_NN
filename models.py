@@ -1,11 +1,10 @@
-from abc import ABC
-
+import torch
 import torch.nn as nn
 from torch import matmul, zeros
 from torch_geometric.nn import GCNConv, MessagePassing
-from torch_geometric.nn.conv.gcn_conv import gcn_norm
 from torch_geometric.utils import add_self_loops, degree
 import torch.nn.functional as F
+
 
 
 class GCN(nn.Module):
@@ -58,54 +57,61 @@ class NormAdj(MessagePassing):
         # If node has 0 degree then normalisations set to 0 (shouldn't be
         # case since self loops added anyway)? but implemented in graph
         # convolution
-        deg_inv_sqrt[deg_inv_sqrt==float('inf')] = 0
+        deg_inv_sqrt[deg_inv_sqrt == float('inf')] = 0
 
-        norm = deg_inv_sqrt[row]*deg_inv_sqrt[col]
+        norm = deg_inv_sqrt[row] * deg_inv_sqrt[col]
         # Propagates values with normalisation
         out = self.propagate(edge_index=edge_index, x=x, norm=norm)
         return out
 
     def message(self, x_j, norm):
-        return norm.view(-1, 1) * x_j # Normalizes value by normalisation
+        return norm.view(-1, 1) * x_j  # Normalizes value by normalisation
         # constant calculated in forward layer, note the view method insures
         # the tensor has the correct shap
 
 
 class GfNN(nn.Module):
-    # WORK NEEDS TO BE DONE ON THIS!!!!!!!!!!
-
     # Implementation of gfNN as shown in https://arxiv.org/pdf/1905.09550.pdf
     # with difference being log_softmax being applied instead of softmax.
     # Note also we have that the augmented normalised adjacency matrix is
     # applied k times
 
-    #adj^k times then linear then relu then linear then relu etc until last
-    # layer, overall we want effectively k-1 pure adj, then 1 conv which is
-    # effectively an adj and a linear, then then k-1 pure linear layers,
-    # k-2 that go from hidden layer to hidden layer and one that goes from
-    # linear to output number of dimensions
+    # adj^k times then linear then relu then linear then relu etc until last
+    # layer such that we also have k linear layers too, k-1 that go from
+    # hidden layer size to hidden layer size and then a final one that goes
+    # to the number of classes
+
     def __init__(self, in_features, hidden_layer_size, out_features, k):
         super().__init__()
-        self.conv1 = GCNConv(in_features, hidden_layer_size)
-        # self.linear_layers = nn.ModuleList([nn.Linear(
-        #     in_features=hidden_layer_size, out_features=hidden_layer_size)
-        #     for _ in range(k-2)])
-        self.classifier = nn.Linear(in_features=hidden_layer_size,
-                                out_features=out_features, bias=False)
+
+        self.linear_hidden_layers = nn.ModuleList([nn.Linear(
+            in_features=hidden_layer_size, out_features=hidden_layer_size)
+            for _ in range(k-2)])
+
+        self.conv_to_hidden = GCNConv(in_channels=in_features,
+                                      out_channels=hidden_layer_size)
+
+        # Final layer that outputs to output vector
+        self.out_linear = nn.Linear(in_features=hidden_layer_size,
+                                    out_features=out_features, bias=False)
         self.adj = NormAdj()
-        # Add a series of Linear layers so that they're equal
         self.k = k
 
     def forward(self, data):
         h, edge_index = data.x, data.edge_index
-
         # Note the adjacency layer applied k-1 times as the following
         # convolutional layer is equivalent to an adjacency layer followed by a
         # linear layer
         for _ in range(self.k-1):
             h = self.adj(h, edge_index)  # Can be applied multiple times
-        h = self.conv1(h, edge_index)
-        h = F.relu(h)
-        h = self.classifier(h)
-        return F.log_softmax(h, dim=1)
 
+        # Effectively an adjacency layer and a linear layer which takes
+        # feature vectors from dim=in_features to dim=hidden_layer_size
+        h = self.conv_to_hidden(h, edge_index)
+
+        for lin_layer in self.linear_hidden_layers:
+            h = lin_layer(h)
+            h = F.relu(h)
+
+        h = self.out_linear(h)
+        return F.log_softmax(h, dim=1)

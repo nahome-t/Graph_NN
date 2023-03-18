@@ -105,4 +105,3 @@ def get_file_name(dataset_name, train_it, model_type, model_depth):
     program_path = Path(__file__)
     fname = str(program_path.parent.absolute()) + extension
     return fname
-

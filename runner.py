@@ -8,7 +8,7 @@ from data_handler import is_consistent, generate_mask, get_file_name, write_to_f
 
 
 learning_rate = 0.01 # Figure out good value?
-max_epochs = 50 # Model trained to 100% accuracy on training dataset,
+max_epochs = 100 # Model trained to 100% accuracy on training dataset,
 # maximum epochs represents
 hidden_layer_size = 16
 dataset = Planetoid(root='/tmp/Cora', name='Cora')
@@ -61,7 +61,7 @@ def train2_perf(model, data, mask):
     model.eval()
 
     print(f'Model not found within max epochs: {max_epochs} ... trying again')
-    # Tries again to find it if function not found within 50 epochs, actually
+    # Tries again to find it if function not found within max epochs, actually
     # this won't try and find one from scratch as the model has some
     # effectively learnt parameters that would need to be reset
     return train2_perf(model, data, mask)
@@ -97,15 +97,16 @@ def run_simulation(dataset_name, train_it, test_num, model_type, model_depth):
         if train_it:
             arr = train2_perf(model, data, generated_mask).detach().cpu().numpy()
         else:
-            arr = model(data)[generated_mask].detach().cpu().numpy()
+            arr = model(data)[generated_mask].argmax(dim=1).detach().cpu().numpy()
+            print(arr)
 
         print(f'Done {k + 1}/{test_num}')
         write_to_file(arr, fname)
 
-    print(f'It took {time.time()-start_time} to finish this program and '
+    print(f'It took {(time.time()-start_time):.3f} to finish this program and '
           f'generate {test_num} '
           f'{"trained" if train_it else "random"} neural networks')
 
 
-run_simulation(dataset_name="Cora", train_it=True, test_num=10,
-               model_type='GCN', model_depth=2)
+run_simulation(dataset_name="Cora", train_it=False, test_num=10,
+               model_type='GfNN', model_depth=4)
