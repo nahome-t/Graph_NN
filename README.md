@@ -18,10 +18,5 @@ The first part of the project involves looking at the frequency at which certain
 - Runner is the code that will eventually be run on computer, will keep generating neural networks then looks at output on benchmark dataset, defined by benchmark_mask. Can currently run a test a specified amount of times and output the results into a file, can also download the file and look at how often each tensor or 'function' appears
 
 # Stuff to-do
-- Change gfNN so that same number of liner layer follows the adjacency layer 
-as only layers of same length can be directly compared
-  that will show how often each data point appears (maybe solved?)
-- Try speed up adjacency or message passing layer in neural network, currently runs around 6x slower than the regular convolutional layer, improve by editing GCNconv layer, removing the linear and bias part
-- Runner currently doesn't actually use inputs correctly, improve on that
 - Train2 currently would need to reset parameters of GNN, need to figure out 
   how to do that
