@@ -6,7 +6,6 @@ from torch_geometric.utils import add_self_loops, degree
 import torch.nn.functional as F
 
 
-
 class GCN(nn.Module):
     # Creates a GCN of arbitrary depth, note the first layer goes from
     # in_features->hidden_layer_size, each subsequent layer from there on
@@ -81,7 +80,12 @@ class GfNN(nn.Module):
     # hidden layer size to hidden layer size and then a final one that goes
     # to the number of classes
 
-    def __init__(self, in_features, hidden_layer_size, out_features, k):
+    # Note for training purposes often more efficient if we don't pre-compute
+    # the adjacency layers since they can be pre-computed, therefore if
+    # adj_layer = False then will simply act as a MLP on the dataset!
+
+    def __init__(self, in_features, hidden_layer_size, out_features, k,
+                 adj_layer=True):
         super().__init__()
 
         self.linear_hidden_layers = nn.ModuleList([nn.Linear(
@@ -94,6 +98,8 @@ class GfNN(nn.Module):
         # Final layer that outputs to output vector
         self.out_linear = nn.Linear(in_features=hidden_layer_size,
                                     out_features=out_features, bias=False)
+
+        self.adj_layer = adj_layer
         self.adj = NormAdj()
         self.k = k
 
@@ -102,8 +108,10 @@ class GfNN(nn.Module):
         # Note the adjacency layer applied k-1 times as the following
         # convolutional layer is equivalent to an adjacency layer followed by a
         # linear layer
-        for _ in range(self.k-1):
-            h = self.adj(h, edge_index)  # Can be applied multiple times
+
+        if self.adj_layer:
+            for _ in range(self.k-1):
+                h = self.adj(h, edge_index)  # Can be applied multiple times
 
         # Effectively an adjacency layer and a linear layer which takes
         # feature vectors from dim=in_features to dim=hidden_layer_size

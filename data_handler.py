@@ -1,11 +1,8 @@
 # Contains functions used to read and write data
 from pathlib import Path
-import os.path
-import os
 import torch
 import numpy as np
 from os.path import exists
-from torch_geometric.datasets import Planetoid
 
 def generate_mask(data_y, mask, group_size=20, num_classes=7, name="Cora"):
     # Picks group_size*num_classes examples from the data within the mask
@@ -105,3 +102,20 @@ def get_file_name(dataset_name, train_it, model_type, model_depth):
     program_path = Path(__file__)
     fname = str(program_path.parent.absolute()) + extension
     return fname
+
+def applyAdjLayer(data, depth):
+    # Does it have
+    adj_layer = NormAdj()
+    smoothed_data = data.clone()
+    # Effectively applies adj layer depth amount of times
+    for _ in range(depth):
+        smoothed_data.x = adj_layer(smoothed_data.x, data.edge_index)
+
+    return smoothed_data
+
+
+# print(list(sm))
+# print("-------------------------")
+# print("data after")
+# print(list(nsm))
+# print(data.x[data.train_mask][0])
