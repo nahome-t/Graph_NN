@@ -109,6 +109,8 @@ class GfNN(nn.Module):
         # convolutional layer is equivalent to an adjacency layer followed by a
         # linear layer
 
+        # Gives option to apply adjacency layer or not, if not effectively
+        # just a MLP applied to feature vectors
         if self.adj_layer:
             for _ in range(self.k-1):
                 h = self.adj(h, edge_index)  # Can be applied multiple times

@@ -4,6 +4,8 @@ import torch
 import numpy as np
 from os.path import exists
 
+from models import NormAdj
+
 def generate_mask(data_y, mask, group_size=20, num_classes=7, name="Cora"):
     # Picks group_size*num_classes examples from the data within the mask
     # given such that such tha each class is appears group_size times (
@@ -35,16 +37,31 @@ def generate_mask(data_y, mask, group_size=20, num_classes=7, name="Cora"):
     np.save(file=f'benchmark_mask:{name}', arr=np.array(test_mask))
     return torch.tensor(test_mask)
 
+def get_file_name(dataset_name, train_it, model_type, model_depth):
+    # Gets the file name that an output should be saved to given the name of
+    # a dataset, whether its trained or not and the model type or depth
+    extension = f'/output/{dataset_name}' \
+               f'_{"trained" if train_it else "random"}_' \
+            f'{model_type}_{model_depth}'
+    program_path = Path(__file__)
+    fname = str(program_path.parent.absolute()) + extension
+    return fname
+
 
 def count_frequency(filename='tensor2'):
     # Gets  data from file, changes it into 2D numpy tensor and effectively
     # counts how often each row or 'function' occurs
-    tensor = np.loadtxt(fname=filename, delimiter=',', )
-    dt = np.dtype((np.void, tensor.dtype.itemsize * tensor.shape[1]))
-    b = np.ascontiguousarray(tensor).view(dt)
-    unq, cnt = np.unique(b, return_counts=True)
-    unq = unq.view(tensor.dtype).reshape(-1, tensor.shape[1])
-    print(list(cnt))
+    tensor = np.loadtxt(fname=filename, delimiter=',')
+
+    # b = np.ascontiguousarray(tensor).view()
+
+    unq, cnt = np.unique(tensor, return_counts=True, axis=0)
+    # print(unq)
+    # unq = unq.view().reshape(-1, tensor.shape[1])
+    print(-np.sort(-cnt))
+
+count_frequency("/Users/nahometewolde/PycharmProjects/Graph_NN/output"
+                "/Cora_trained_GfNN_10")
 
 
 def is_consistent(model, data):
@@ -53,7 +70,6 @@ def is_consistent(model, data):
     mask = data.train_mask
     model.eval()
     with torch.no_grad():
-        test_num = mask.sum()
         prediction = model(data).argmax(dim=1)
         correct = (prediction[mask] == data.y[mask]).sum()
         if int(correct) == mask.sum():
@@ -65,10 +81,8 @@ def is_consistent(model, data):
 
 def write_to_file(arr, fpath):
     # Takes in a 1d np array and then adds it to a csv as a row
-    # arr = np.reshape(arr, (-1, 1))
-    # print(np.reshape(arr, (-1, 1)))
     arr = np.reshape(arr, (1, -1))
-    print(arr)
+    # print(arr)
     with open(fpath, 'ab') as file:
         np.savetxt(fname=file, X=arr, delimiter=",", fmt='%d')
 
@@ -93,25 +107,20 @@ def test_accuracy(model, data, epoch_num=None, on_training_data = True):
     model.train()
 
 
-def get_file_name(dataset_name, train_it, model_type, model_depth):
-    # Gets the file name that an output should be saved to given the name of
-    # a dataset, whether its trained or not and the model type or depth
-    extension = f'/output/{dataset_name}' \
-               f'_{"trained" if train_it else "random"}_' \
-            f'{model_type}_{model_depth}'
-    program_path = Path(__file__)
-    fname = str(program_path.parent.absolute()) + extension
-    return fname
-
 def applyAdjLayer(data, depth):
-    # Does it have
+    # Applies normalised adjacency layer depth amount of times, maybe should
+    # be in models rather than data_handler
     adj_layer = NormAdj()
     smoothed_data = data.clone()
     # Effectively applies adj layer depth amount of times
     for _ in range(depth):
         smoothed_data.x = adj_layer(smoothed_data.x, data.edge_index)
-
     return smoothed_data
+
+
+def produce_rankVProb_plot(arr: np.array):
+    arr = 1/np.sum(arr)*arr
+    
 
 
 # print(list(sm))

@@ -7,9 +7,10 @@ import time
 from data_handler import is_consistent, generate_mask, get_file_name, \
     write_to_file, applyAdjLayer
 from pyinstrument import Profiler
+import numpy as np
 
 learning_rate = 0.01  # Figure out good value?
-max_epochs = 100  # Model trained to 100% accuracy on training dataset,
+max_epochs = 200  # Model trained to 100% accuracy on training dataset,
 # maximum epochs represents
 hidden_layer_size = 16
 dataset = Planetoid(root='/tmp/Cora', name='Cora')
@@ -42,9 +43,9 @@ def generate_model(GNN_type, depth):
 
 def train2_perf(model, data, mask):
     # A slightly altered training method, model is trained to 100% accuracy
-    # on training data, this model is then applied to the mask given by one
-    # of the parameters (in this case the generated test mask), the output of
-    # this is then outputted
+    # on training data, this model is then applied to the data with the mask
+    # given by one of the parameters (in this case the generated test mask),
+    # the output of this is then outputted
 
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     model.train()
@@ -52,7 +53,7 @@ def train2_perf(model, data, mask):
         if is_consistent(model=model, data=data):
             print(f'A model with 100% accuracy was found at epoch {i}')
             with torch.no_grad():
-                return model(data)[mask].argmax(dim=1)
+                return model(data)[mask].argmax(dim=1).detach().cpu().numpy()
 
         optimizer.zero_grad()
         output = model(data)
@@ -66,10 +67,11 @@ def train2_perf(model, data, mask):
     model.eval()
 
     print(f'Model not found within max epochs: {max_epochs} ... trying again')
+
     # Tries again to find it if function not found within max epochs, actually
     # this won't try and find one from scratch as the model has some
     # effectively learnt parameters that would need to be reset
-    return train2_perf(model, data, mask)
+    return np.array([])
 
 
 def run_simulation(dataset_name, train_it, test_num, model_type, model_depth):
@@ -101,20 +103,25 @@ def run_simulation(dataset_name, train_it, test_num, model_type, model_depth):
     # Creates file if it doesn't exist
     if not exists(fname):
         open(fname, "x")
-    for k in range(test_num):
+    k = 0
+
+    while k < test_num:
         model = generate_model(GNN_type=model_type, depth=model_depth)
         # If we want our test to train neural network it'll train it,
         # otherwise it'll just apply our model to data
         if train_it:
-            arr = train2_perf(model, data_used, generated_mask).detach().cpu(). \
-                numpy()
+            arr = train2_perf(model, data_used, generated_mask)
         else:
-            arr = model(data_used)[generated_mask].argmax(dim=1).detach().cpu() \
-                .numpy()
-            print(arr)
-
+            arr = model(data_used)[generated_mask].argmax(dim=1)
+        # print(arr)
         print(f'Done {k + 1}/{test_num}')
+
+        if arr.size == 0:
+            print('gg')
+            continue
+
         write_to_file(arr, fname)
+        k += 1
 
     print(
         f'It took {(time.time() - start_time):.3f} to finish this program and '
@@ -124,16 +131,6 @@ def run_simulation(dataset_name, train_it, test_num, model_type, model_depth):
 
 # Used to check training times for each type of neural network
 
-profiler = Profiler()
-profiler.start()
-run_simulation(dataset_name="Cora", train_it=False, test_num=2,
-               model_type='GfNN', model_depth=6)
-profiler.stop()
-profiler.print()
 
-profiler2 = Profiler()
-profiler2.start()
-run_simulation(dataset_name="Cora", train_it=False, test_num=2,
-               model_type='GCN', model_depth=3)
-profiler2.stop()
-profiler2.print()
+run_simulation(dataset_name="Cora", train_it=True, test_num=100,
+               model_type='GfNN', model_depth=10)
