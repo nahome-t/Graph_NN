@@ -3,7 +3,7 @@ from pathlib import Path
 import torch
 import numpy as np
 from os.path import exists
-
+import matplotlib.pyplot as plt
 from models import NormAdj
 
 def generate_mask(data_y, mask, group_size=20, num_classes=7, name="Cora"):
@@ -58,10 +58,8 @@ def count_frequency(filename='tensor2'):
     unq, cnt = np.unique(tensor, return_counts=True, axis=0)
     # print(unq)
     # unq = unq.view().reshape(-1, tensor.shape[1])
-    print(-np.sort(-cnt))
+    return -np.sort(-cnt)
 
-count_frequency("/Users/nahometewolde/PycharmProjects/Graph_NN/output"
-                "/Cora_trained_GfNN_10")
 
 
 def is_consistent(model, data):
@@ -118,8 +116,32 @@ def applyAdjLayer(data, depth):
     return smoothed_data
 
 
-def produce_rankVProb_plot(arr: np.array):
-    arr = 1/np.sum(arr)*arr
+def produce_rankVProb_plot(*arrays, labels = None, title="Rank vs "
+                                                         "Probability",
+                           xlabel="Rank", ylabel="Probability"):
+    max_length = 0
+    arrays = list(arrays)
+    for i in range(len(arrays)):
+        max_length = max(max_length, arrays[i].size)
+        arrays[i] = 1/np.sum(arrays[i])*arrays[i] # Normalises array
+
+    print(arrays)
+
+    rank = np.arange(max_length)
+    for i in range(len(arrays)):
+        # Makes sure all the arrays are the same length
+        l = max_length-arrays[i].size
+        arrays[i] = np.concatenate((arrays[i], np.zeros(l)))
+        plt.plot(rank, arrays[i], label=labels[i])
+
+        if labels:
+            plt.legend()
+
+        plt.xlabel('Rank')
+        plt.ylabel('Probability')
+
+    plt.show()
+
     
 
 
