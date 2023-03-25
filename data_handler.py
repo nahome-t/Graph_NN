@@ -48,17 +48,23 @@ def get_file_name(dataset_name, train_it, model_type, model_depth):
     return fname
 
 
-def count_frequency(filename='tensor2'):
+def count_frequency(filename='tensor2', width=None, binarised=False):
     # Gets  data from file, changes it into 2D numpy tensor and effectively
     # counts how often each row or 'function' occurs
     tensor = np.loadtxt(fname=filename, delimiter=',')
+    if binarised:
+        tensor = tensor%2
+    print(tensor.shape)
 
-    # b = np.ascontiguousarray(tensor).view()
+    if width:
+        tensor = tensor[:, :width]
+
+    print(tensor.shape)
 
     unq, cnt = np.unique(tensor, return_counts=True, axis=0)
-    # print(unq)
-    # unq = unq.view().reshape(-1, tensor.shape[1])
+    print(unq)
     return -np.sort(-cnt)
+
 
 
 
@@ -118,7 +124,7 @@ def applyAdjLayer(data, depth):
 
 def produce_rankVProb_plot(*arrays, labels = None, title="Rank vs "
                                                          "Probability",
-                           xlabel="Rank", ylabel="Probability"):
+                           xlabel="Rank", ylabel="Probability", log_scale=True):
     max_length = 0
     arrays = list(arrays)
     for i in range(len(arrays)):
@@ -132,17 +138,41 @@ def produce_rankVProb_plot(*arrays, labels = None, title="Rank vs "
         # Makes sure all the arrays are the same length
         l = max_length-arrays[i].size
         arrays[i] = np.concatenate((arrays[i], np.zeros(l)))
-        plt.plot(rank, arrays[i], label=labels[i])
+
 
         if labels:
+            plt.plot(rank, arrays[i], label=labels[i])
             plt.legend()
+        else:
+            plt.plot(rank, arrays[i])
 
         plt.xlabel('Rank')
         plt.ylabel('Probability')
 
+    if log_scale:
+        plt.xscale('log')
+        plt.yscale('log')
+
     plt.show()
 
-    
+
+WIDTH = 15
+
+fname1 = get_file_name("Cora", False, "GCN", 2)
+freq1 = count_frequency(fname1, width=WIDTH)
+freq2 = count_frequency(fname1, WIDTH*2)
+freq3 = count_frequency(fname1, WIDTH*4)
+produce_rankVProb_plot(freq1, freq2, freq3, labels=["Width: 35", "Width: 70",
+                                              "Width: 140"])
+
+# produce_rankVProb_plot(freq1)
+# fname2 = get_file_name("Cora", True, "GfNN", 6)
+# freq2 = count_frequency(fname2, width=WIDTH)
+
+# produce_rankVProb_plot(freq1, freq2, labels=["GCN, depth 10", "GfNN, depth 10"])
+
+# print(get_file_name('Cora', False, 'GFN', 10))
+
 
 
 # print(list(sm))

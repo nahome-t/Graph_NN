@@ -28,13 +28,13 @@ def generate_model(GNN_type, depth):
         model = GCN(in_features=data.num_features,
                     out_features=dataset.num_classes,
                     depth=depth,
-                    hidden_layer_size=hidden_layer_size)
+                    hidden_layer_size=hidden_layer_size).to(device)
     elif GNN_type == 'GfNN':
         model = GfNN(in_features=data.num_features,
                      out_features=dataset.num_classes,
                      k=depth,
                      hidden_layer_size=hidden_layer_size,
-                     adj_layer=False)
+                     adj_layer=False).to(device)
         # Since we want the depth to be the number of adjacency layers we
         # have we can effectively pre-compute the layers beforehand
 
@@ -51,7 +51,7 @@ def train2_perf(model, data, mask):
     model.train()
     for i in range(max_epochs):
         if is_consistent(model=model, data=data):
-            print(f'A model with 100% accuracy was found at epoch {i}')
+            # print(f'A model with 100% accuracy was found at epoch {i}')
             with torch.no_grad():
                 return model(data)[mask].argmax(dim=1).detach().cpu().numpy()
 
@@ -95,7 +95,8 @@ def run_simulation(dataset_name, train_it, test_num, model_type, model_depth):
 
     # Generates mask, or loads it if it exists within file system,
     generated_mask = generate_mask(data_y=data.y, mask=data.train_mask,
-                                   group_size=20, num_classes=7, name="Cora")
+                                   group_size=20, num_classes=7,
+                                   name="Cora").to(device)
 
     fname = get_file_name(dataset_name, train_it, model_type,
                           model_depth)
@@ -114,7 +115,8 @@ def run_simulation(dataset_name, train_it, test_num, model_type, model_depth):
         else:
             arr = model(data_used)[generated_mask].argmax(dim=1)
         # print(arr)
-        print(f'Done {k + 1}/{test_num}')
+        if (k+1)%100 == 0:
+            print(f'Done {k + 1}/{test_num}')
 
         if arr.size == 0:
             print('gg')
@@ -124,7 +126,7 @@ def run_simulation(dataset_name, train_it, test_num, model_type, model_depth):
         k += 1
 
     print(
-        f'It took {(time.time() - start_time):.3f} to finish this program and '
+        f'It took {(time.time() - start_time):.3f}s to finish this program and '
         f'generate {test_num} '
         f'{"trained" if train_it else "random"} neural networks')
 
@@ -132,5 +134,17 @@ def run_simulation(dataset_name, train_it, test_num, model_type, model_depth):
 # Used to check training times for each type of neural network
 
 
-run_simulation(dataset_name="Cora", train_it=True, test_num=100,
-               model_type='GfNN', model_depth=10)
+
+run_simulation(dataset_name="Cora", train_it=False, test_num=200000,
+               model_type='GCN', model_depth=2)
+
+# run_simulation(dataset_name="Cora", train_it=True, test_num=20000,
+#                model_type='GCN', model_depth=6)
+#
+# run_simulation(dataset_name="Cora", train_it=True, test_num=20000,
+#                model_type='GfNN', model_depth=6)
+
+# run_simulation(dataset_name="Cora", train_it=True, test_num=200000,
+#                model_type='GfNN', model_depth=6)
+# run_simulation(dataset_name="Cora", train_it=True, test_num=200000,
+#                model_type='GCN', model_depth=6)
