@@ -48,12 +48,16 @@ def get_file_name(dataset_name, train_it, model_type, model_depth):
     return fname
 
 
-def count_frequency(filename='tensor2', width=None, binarised=False):
+def count_frequency(filename='tensor2', width=None, binarised=False,
+                    perm_inv=False):
     # Gets  data from file, changes it into 2D numpy tensor and effectively
     # counts how often each row or 'function' occurs
     tensor = np.loadtxt(fname=filename, delimiter=',')
     if binarised:
         tensor = tensor%2
+
+    if perm_inv:
+        tensor = permutational_order(tensor)
     print(tensor.shape)
 
     if width:
@@ -122,29 +126,65 @@ def applyAdjLayer(data, depth):
     return smoothed_data
 
 
-def produce_rankVProb_plot(*arrays, labels = None, title="Rank vs "
-                                                         "Probability",
-                           xlabel="Rank", ylabel="Probability", log_scale=True):
+def calc_row_err(probability, test_size, depth, z=1):
+
+    err = np.zeros((2, probability.size))
+    err[0] = probability
+    err[1] = probability
+    for i in range(depth):
+        err[0] = probability - z*np.sqrt(err[0] * (1 - err[0]) /
+                                    test_size)
+        err[1] = probability + z*np.sqrt(err[1] * (1 - err[1]) /
+                                    test_size)
+
+    return err
+
+def produce_rankVProb_plot(*arrays, labels = None,
+                           title="Rank vs Probability",
+                           xlabel="Rank",
+                           ylabel="Probability",
+                           log_scale=True,
+                           cumulative=False,
+                           error = False):
     max_length = 0
     arrays = list(arrays)
+
+    test_size = np.zeros(len(arrays))
     for i in range(len(arrays)):
         max_length = max(max_length, arrays[i].size)
+        test_size[i] = np.sum(arrays[i])
         arrays[i] = 1/np.sum(arrays[i])*arrays[i] # Normalises array
+        print(np.sum(arrays[i]))
 
-    print(arrays)
+    rank = np.arange(1, max_length + 1)  # Rank starts with 1
+    err_val = np.zeros((len(arrays), max_length))
 
-    rank = np.arange(max_length)
+    print("THIS")
+
+
+
     for i in range(len(arrays)):
         # Makes sure all the arrays are the same length
         l = max_length-arrays[i].size
         arrays[i] = np.concatenate((arrays[i], np.zeros(l)))
 
+        if error:
+            # err_val[i] = np.sqrt(arrays[i] * (1 - arrays[i]) / test_size[i])
+
+            # plt.fill_between(rank, arrays[i] - err_val[i], arrays[i] +
+            #                  err_val[i], alpha=0.3)
+
+            e2 = calc_row_err(arrays[i], test_size[i], depth=5)
+            plt.fill_between(rank, e2[0], e2[1], alpha=0.3)
+        if cumulative:
+            arrays[i] = np.cumsum(arrays[i])
 
         if labels:
             plt.plot(rank, arrays[i], label=labels[i])
             plt.legend()
         else:
             plt.plot(rank, arrays[i])
+            print('hehe')
 
         plt.xlabel('Rank')
         plt.ylabel('Probability')
@@ -156,21 +196,42 @@ def produce_rankVProb_plot(*arrays, labels = None, title="Rank vs "
     plt.show()
 
 
-WIDTH = 15
+def permutational_order(arr):
+    for i in range(arr.shape[0]):
+        # print("ARRAY")
+        # print(arr[i])
+        unique_vals = np.unique(arr[i])
+        unq, idx = np.unique(arr[i], return_index=True)
+        val_map = {val: j for j, val in enumerate(arr[i, np.sort(idx)])}
 
-fname1 = get_file_name("Cora", False, "GCN", 2)
-freq1 = count_frequency(fname1, width=WIDTH)
-freq2 = count_frequency(fname1, WIDTH*2)
-freq3 = count_frequency(fname1, WIDTH*4)
-produce_rankVProb_plot(freq1, freq2, freq3, labels=["Width: 35", "Width: 70",
-                                              "Width: 140"])
+        arr[i] = np.array([val_map[val] for val in arr[i]])
+    return arr
 
-# produce_rankVProb_plot(freq1)
+
+# ss = np.array([[4, 7, 7, 1, 2, 1, 6],
+#        [4, 2, 1, 3, 3, 4, 1]])
+#
+# print(permutational_order(ss))
+WIDTH = 35
+
+fname1 = get_file_name("Cora", False, "GfNN", 2)
+# freq1 = count_frequency(fname1, width=WIDTH, perm_inv=True)
+freq2 = count_frequency(fname1, width=WIDTH, binarised=True)
+# freq3 = count_frequency(fname1, WIDTH*4, binarised=True)
+# produce_rankVProb_plot(freq1, freq2, freq3, labels=["Width: 35", "Width: 70",
+#                                               "Width: 140"], log_scale=True,
+#                        cumulative=True)
+
+
+# produce_rankVProb_plot(freq1, freq2, labels=["Perm_inv graph conv net depth "
+#                                              "10", "Not_perm_inv conv net "
+#                                                    "depth 10"],
+#                        error=True)
 # fname2 = get_file_name("Cora", True, "GfNN", 6)
 # freq2 = count_frequency(fname2, width=WIDTH)
 
 # produce_rankVProb_plot(freq1, freq2, labels=["GCN, depth 10", "GfNN, depth 10"])
-
+produce_rankVProb_plot(freq2, error=True)
 # print(get_file_name('Cora', False, 'GFN', 10))
 
 
