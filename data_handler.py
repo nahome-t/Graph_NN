@@ -5,15 +5,17 @@ import numpy as np
 from os.path import exists
 import matplotlib.pyplot as plt
 from models import NormAdj
+from torch_geometric.datasets import Planetoid
 
 def generate_mask(data_y, mask, group_size=20, num_classes=7, name="Cora"):
     # Picks group_size*num_classes examples from the data within the mask
     # given such that such tha each class is appears group_size times (
     # assuming it can find that many)
 
-    if exists(f'benchmark_mask:{name}.npy'):
+    if exists(f'benchmark_mask:{name}_{group_size}_{num_classes}.npy'):
         print('Loading, benchmark mask, already exists...')
-        return torch.from_numpy(np.load(f'benchmark_mask:{name}.npy'))
+        return torch.from_numpy(np.load(f'benchmark_mask:{name}_'
+                                        f'{group_size}_{num_classes}.npy'))
 
     data_y = data_y.tolist()
     mask = mask.tolist()
@@ -34,7 +36,8 @@ def generate_mask(data_y, mask, group_size=20, num_classes=7, name="Cora"):
             freq[x] += 1
             test_mask[i] = True
 
-    np.save(file=f'benchmark_mask:{name}', arr=np.array(test_mask))
+    np.save(file=f'benchmark_mask:{name}_{group_size}_{num_classes}.npy',
+            arr=np.array(test_mask))
     return torch.tensor(test_mask)
 
 def get_file_name(dataset_name, train_it, model_type, model_depth):
@@ -48,8 +51,8 @@ def get_file_name(dataset_name, train_it, model_type, model_depth):
     return fname
 
 
-def count_frequency(filename='tensor2', width=None, binarised=False,
-                    perm_inv=False):
+def count_frequency(filename='tensor2', binarised=False,
+                    perm_inv=False, mask=None):
     # Gets  data from file, changes it into 2D numpy tensor and effectively
     # counts how often each row or 'function' occurs
     tensor = np.loadtxt(fname=filename, delimiter=',')
@@ -60,16 +63,14 @@ def count_frequency(filename='tensor2', width=None, binarised=False,
         tensor = permutational_order(tensor)
     print(tensor.shape)
 
-    if width:
-        tensor = tensor[:, :width]
+    if mask is not None:
+        tensor = tensor[:, mask] # Applies the mask to each row
 
     print(tensor.shape)
 
     unq, cnt = np.unique(tensor, return_counts=True, axis=0)
     print(unq)
     return -np.sort(-cnt)
-
-
 
 
 def is_consistent(model, data):
@@ -207,31 +208,37 @@ def permutational_order(arr):
         arr[i] = np.array([val_map[val] for val in arr[i]])
     return arr
 
+dataset = Planetoid(root='/tmp/Cora', name='Cora')
+data = dataset[0]
 
-# ss = np.array([[4, 7, 7, 1, 2, 1, 6],
-#        [4, 2, 1, 3, 3, 4, 1]])
-#
-# print(permutational_order(ss))
-WIDTH = 35
+# # This is the mask with 20 lots of each class
+m1 = generate_mask(data_y=data.y, group_size=20, num_classes=7,
+                   mask=data.train_mask).numpy()
 
-fname1 = get_file_name("Cora", False, "GfNN", 2)
-# freq1 = count_frequency(fname1, width=WIDTH, perm_inv=True)
-freq2 = count_frequency(fname1, width=WIDTH, binarised=True)
+# This is subset of original mask
+m2 = generate_mask(data_y=data.y, group_size=4, num_classes=7, mask=m1).numpy()
+print(np.unique(data.y[m2].numpy(), return_counts=True))
+
+
+fname1 = get_file_name("Cora", False, "GfNN", 6)
+fname2 = get_file_name("Cora", False, "GCN", 6)
+freq1 = count_frequency(fname1, binarised=False, mask=m2[m1])
+
+freq2 = count_frequency(fname2, binarised=False, mask=m2[m1])
+# produce_rankVProb_plot(freq1)
+# freq2 = count_frequency(fname1, perm_inv=False)
 # freq3 = count_frequency(fname1, WIDTH*4, binarised=True)
 # produce_rankVProb_plot(freq1, freq2, freq3, labels=["Width: 35", "Width: 70",
 #                                               "Width: 140"], log_scale=True,
 #                        cumulative=True)
 
-
-# produce_rankVProb_plot(freq1, freq2, labels=["Perm_inv graph conv net depth "
-#                                              "10", "Not_perm_inv conv net "
-#                                                    "depth 10"],
-#                        error=True)
+produce_rankVProb_plot(freq1, freq2, labels=["f1", "f2"],
+                       error=True)
 # fname2 = get_file_name("Cora", True, "GfNN", 6)
 # freq2 = count_frequency(fname2, width=WIDTH)
 
 # produce_rankVProb_plot(freq1, freq2, labels=["GCN, depth 10", "GfNN, depth 10"])
-produce_rankVProb_plot(freq2, error=True)
+# produce_rankVProb_plot(freq2, error=True)
 # print(get_file_name('Cora', False, 'GFN', 10))
 
 
