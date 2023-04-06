@@ -6,32 +6,30 @@ from models import GCN, GfNN, NormAdj
 import time
 from data_handler import is_consistent, generate_mask, get_file_name, \
     write_to_file, applyAdjLayer
-from pyinstrument import Profiler
 import numpy as np
+
+# FIGURE OUT VALUE FOR HIDDEN LAYER SIZE AND LEARNING RATE
 
 learning_rate = 0.01  # Figure out good value?
 max_epochs = 200  # Model trained to 100% accuracy on training dataset,
 # maximum epochs represents
 hidden_layer_size = 16
-dataset = Planetoid(root='/tmp/Cora', name='Cora')
-data = dataset[0]  # Only one graph in this particular dataset so we just need
-# to load the first element
+
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-data = data.to(device)
 
 
-def generate_model(GNN_type, depth):
+def generate_model(GNN_type, depth, num_features, num_classes):
     # Generates a model using the dataset in the function and the given
     # parameters
     if GNN_type == 'GCN':
-        model = GCN(in_features=data.num_features,
-                    out_features=dataset.num_classes,
+        model = GCN(in_features=num_features,
+                    out_features=num_classes,
                     depth=depth,
                     hidden_layer_size=hidden_layer_size).to(device)
     elif GNN_type == 'GfNN':
-        model = GfNN(in_features=data.num_features,
-                     out_features=dataset.num_classes,
+        model = GfNN(in_features=num_features,
+                     out_features=num_classes,
                      k=depth,
                      hidden_layer_size=hidden_layer_size,
                      adj_layer=False).to(device)
@@ -75,7 +73,7 @@ def train2_perf(model, data, mask):
 
 
 def run_simulation(dataset_name, train_it, test_num, model_type, model_depth):
-    # runs model multiple
+    # runs model multiple times
 
     # dataset_name: in case of cora just 'Cora'
     # train_it: True/False whether we want to train neural network before
@@ -88,6 +86,11 @@ def run_simulation(dataset_name, train_it, test_num, model_type, model_depth):
 
     start_time = time.time()
 
+    dataset = Planetoid(root=f'/tmp/{dataset_name}', name=dataset_name)
+    data = dataset[0]
+    data = data.to(device)
+    num_classes = dataset.num_classes
+
     # If we have that we want to train GNN easier to pre-compute initial
     # adjacency layers and so
     data_used = applyAdjLayer(data, model_depth) \
@@ -95,8 +98,8 @@ def run_simulation(dataset_name, train_it, test_num, model_type, model_depth):
 
     # Generates mask, or loads it if it exists within file system,
     generated_mask = generate_mask(data_y=data.y, mask=data.train_mask,
-                                   group_size=20, num_classes=7,
-                                   name="Cora").to(device)
+                                   group_size=20, num_classes=num_classes,
+                                   name=dataset_name).to(device)
 
     fname = get_file_name(dataset_name, train_it, model_type,
                           model_depth)
@@ -107,7 +110,9 @@ def run_simulation(dataset_name, train_it, test_num, model_type, model_depth):
     k = 0
 
     while k < test_num:
-        model = generate_model(GNN_type=model_type, depth=model_depth)
+        model = generate_model(GNN_type=model_type, depth=model_depth,
+                               num_classes=num_classes,
+                               num_features=data.num_features)
         # If we want our test to train neural network it'll train it,
         # otherwise it'll just apply our model to data
         if train_it:
@@ -115,7 +120,7 @@ def run_simulation(dataset_name, train_it, test_num, model_type, model_depth):
         else:
             arr = model(data_used)[generated_mask].argmax(dim=1)
         # print(arr)
-        if (k+1)%100 == 0:
+        if (k+1)%200 == 0:
             print(f'Done {k + 1}/{test_num}')
 
         if arr.size == 0:
@@ -133,9 +138,7 @@ def run_simulation(dataset_name, train_it, test_num, model_type, model_depth):
 
 # Used to check training times for each type of neural network
 
-
-
-run_simulation(dataset_name="Cora", train_it=False, test_num=200000,
+run_simulation(dataset_name="CiteSeer", train_it=False, test_num=3000,
                model_type='GCN', model_depth=2)
 
 # run_simulation(dataset_name="Cora", train_it=True, test_num=20000,

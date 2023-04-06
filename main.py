@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from models import GCN, GfNN
 from data_handler import test_accuracy
 
-dataset = Planetoid(root='/tmp/Cora', name='Cora')
+dataset = Planetoid(root='/tmp/CiteSeer', name='CiteSeer')
 data = dataset[0] # Only one graph in this particular dataset so we just need
 # to load the first element
 
@@ -14,7 +14,7 @@ num_epochs = 50 # Number of epochs over which data will be trained on,
 # should eventually be changed so that it is a variable number which stops
 # once 100% accuracy reached in training data, or we reach some max limit
 
-hidden_layer_size = 16 # Size of hidden convolution layers (all same size)
+hidden_layer_size = 16  # Size of hidden convolution layers (all same size)
 in_features = data.num_features
 out_features = dataset.num_classes
 depth = int(input('Enter the depth of neural network: '))
@@ -51,6 +51,5 @@ def train(model, data):
         test_accuracy(model, data, epoch+1)  # +1 because epoch should start
         # from 1
     # test_accuracy(model, data, num_epochs)
-
 
 train(model=model, data=data)

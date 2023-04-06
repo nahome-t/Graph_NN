@@ -1,6 +1,8 @@
 # Contains functions used to read and write data
 from pathlib import Path
-import torch
+
+import pandas as pd
+import torch, math
 import numpy as np
 from os.path import exists
 import matplotlib.pyplot as plt
@@ -51,11 +53,11 @@ def get_file_name(dataset_name, train_it, model_type, model_depth):
     return fname
 
 
-def count_frequency(filename='tensor2', binarised=False,
-                    perm_inv=False, mask=None):
+def count_frequency(fname, binarised=False,
+                    perm_inv=False, mask=None, return_unq=False):
     # Gets  data from file, changes it into 2D numpy tensor and effectively
     # counts how often each row or 'function' occurs
-    tensor = np.loadtxt(fname=filename, delimiter=',')
+    tensor = np.loadtxt(fname=fname, delimiter=',')
     if binarised:
         tensor = tensor%2
 
@@ -70,7 +72,10 @@ def count_frequency(filename='tensor2', binarised=False,
 
     unq, cnt = np.unique(tensor, return_counts=True, axis=0)
     print(unq)
-    return -np.sort(-cnt)
+    if return_unq:
+        return unq, cnt
+    else:
+        return np.sort(cnt)[::-1]
 
 
 def is_consistent(model, data):
@@ -205,12 +210,17 @@ def permutational_order(arr):
         arr[i] = np.array([val_map[val] for val in arr[i]])
     return arr
 
-def red_mask_for_cora(group_size):
-    dataset = Planetoid(root='/tmp/Cora', name='Cora')
+def reduced_mask(dataset_name, group_size, org_group_size=20):
+    # This produces a mask that takes in a function which has size of
+    # org_group_size*num_classes and reduces it so that its now
+    # group_size*num_classes, i.e. just reduces size of function so that in
+    # our new function it has a certain amount of each function
+    dataset = Planetoid(root=f'/tmp/{dataset_name}', name=dataset_name)
     data = dataset[0]
-
+    num_classes = dataset.num_classes
     # # This is the mask with 20 lots of each class
-    m1 = generate_mask(data_y=data.y, group_size=20, num_classes=7,
+    m1 = generate_mask(data_y=data.y, group_size=org_group_size,
+                       num_classes=num_classes,
                        mask=data.train_mask).numpy()
 
     # This is subset of original mask
@@ -221,26 +231,38 @@ def red_mask_for_cora(group_size):
 
 
 
-fname1 = get_file_name("Cora", False, "GfNN", 2)
-fname2 = get_file_name("Cora", False, "GCN", 2)
-freq1 = count_frequency(fname1, perm_inv=True, mask=red_mask_for_cora(3))
-freq2 = count_frequency(fname1, mask=red_mask_for_cora(3))
+fname1 = get_file_name("Cora", True, "GfNN", 6)
+fname2 = get_file_name("Cora", True, "GCN", 6)
 
-# produce_rankVProb_plot(freq1)
-# freq2 = count_frequency(fname1, perm_inv=False)
-# freq3 = count_frequency(fname1, WIDTH*4, binarised=True)
-# produce_rankVProb_plot(freq1, freq2, freq3, labels=["Width: 35", "Width: 70",
-#                                               "Width: 140"], log_scale=True,
-#                        cumulative=True)
 
-produce_rankVProb_plot(freq1, freq2, labels=["f1", "f2"],
-                       error=False)
-# fname2 = get_file_name("Cora", True, "GfNN", 6)
-# freq2 = count_frequency(fname2, width=WIDTH)
+# unq1, freq1 = count_frequency(fname1, mask=reduced_mask(3), binarised=True)
+# unq2, freq2 = count_frequency(fname2, mask=red_mask_for_cora(3), binarised=True)
+#
+# unq1 = ["".join([str(int(j)) for j in i]) for i in unq1]
+# unq2 = ["".join([str(int(j)) for j in i]) for i in unq2]
+# total1 = int(np.sum(freq1))
+# total2 = int(np.sum(freq2))
+# df1 = pd.DataFrame.from_dict({'f':unq1, 'c':freq1/total1})
+# df1.sort_values(by=['c'], inplace=True, ascending=False)
+# df1.reset_index(drop=True, inplace=True)
+# df2 = pd.DataFrame.from_dict({'f':unq2, 'c':freq2/total2})
+# df2.sort_values(by=['c'], inplace=True, ascending=False)
+# df2.reset_index(drop=True, inplace=True)
+#
+# df=pd.merge(df1,df2,left_on='f',right_on='f',how='outer',indicator=True)
+#
+# df['c_x'] = [i if not math.isnan(i) else 1/total1 for i in df['c_x']]
+# df['c_y'] = [i if not math.isnan(i) else 1/total2 for i in df['c_y']]
+# print(df)
+#
+# fig, ax = plt.subplots()
+# ax.scatter(df['c_x'], df['c_y'])
+# ax.set_xscale('log')
+# ax.set_yscale('log')
+# plt.show()
 
-# produce_rankVProb_plot(freq1, freq2, labels=["GCN, depth 10", "GfNN, depth 10"])
-# produce_rankVProb_plot(freq2, error=True)
-# print(get_file_name('Cora', False, 'GFN', 10))
+freq1 = count_frequency(fname=fname1, mask=red_mask_for_cora(5))
+produce_rankVProb_plot(freq1)
 
 
 
