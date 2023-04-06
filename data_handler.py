@@ -127,8 +127,10 @@ def applyAdjLayer(data, depth):
     return smoothed_data
 
 
-def calc_row_err(probability, test_size, depth, z=1):
-
+def calc_row_err(probability, test_size, depth=10, z=1):
+    # Given a set of probabilities and the number of tests needed to find
+    # those probabilities returns the error on the data via the Wilson score
+    # interval
     err = np.zeros((2, probability.size))
     err[0] = probability
     err[1] = probability
@@ -170,11 +172,6 @@ def produce_rankVProb_plot(*arrays, labels = None,
         arrays[i] = np.concatenate((arrays[i], np.zeros(l)))
 
         if error:
-            # err_val[i] = np.sqrt(arrays[i] * (1 - arrays[i]) / test_size[i])
-
-            # plt.fill_between(rank, arrays[i] - err_val[i], arrays[i] +
-            #                  err_val[i], alpha=0.3)
-
             e2 = calc_row_err(arrays[i], test_size[i], depth=5)
             plt.fill_between(rank, e2[0], e2[1], alpha=0.3)
         if cumulative:
@@ -208,23 +205,27 @@ def permutational_order(arr):
         arr[i] = np.array([val_map[val] for val in arr[i]])
     return arr
 
-dataset = Planetoid(root='/tmp/Cora', name='Cora')
-data = dataset[0]
+def red_mask_for_cora(group_size):
+    dataset = Planetoid(root='/tmp/Cora', name='Cora')
+    data = dataset[0]
 
-# # This is the mask with 20 lots of each class
-m1 = generate_mask(data_y=data.y, group_size=20, num_classes=7,
-                   mask=data.train_mask).numpy()
+    # # This is the mask with 20 lots of each class
+    m1 = generate_mask(data_y=data.y, group_size=20, num_classes=7,
+                       mask=data.train_mask).numpy()
 
-# This is subset of original mask
-m2 = generate_mask(data_y=data.y, group_size=4, num_classes=7, mask=m1).numpy()
-print(np.unique(data.y[m2].numpy(), return_counts=True))
+    # This is subset of original mask
+    m2 = generate_mask(data_y=data.y, group_size=group_size, num_classes=7,
+                       mask=m1).numpy()
+    print(np.unique(data.y[m2].numpy(), return_counts=True))
+    return m2[m1]
 
 
-fname1 = get_file_name("Cora", False, "GfNN", 6)
-fname2 = get_file_name("Cora", False, "GCN", 6)
-freq1 = count_frequency(fname1, binarised=False, mask=m2[m1])
 
-freq2 = count_frequency(fname2, binarised=False, mask=m2[m1])
+fname1 = get_file_name("Cora", False, "GfNN", 2)
+fname2 = get_file_name("Cora", False, "GCN", 2)
+freq1 = count_frequency(fname1, perm_inv=True, mask=red_mask_for_cora(3))
+freq2 = count_frequency(fname1, mask=red_mask_for_cora(3))
+
 # produce_rankVProb_plot(freq1)
 # freq2 = count_frequency(fname1, perm_inv=False)
 # freq3 = count_frequency(fname1, WIDTH*4, binarised=True)
@@ -233,7 +234,7 @@ freq2 = count_frequency(fname2, binarised=False, mask=m2[m1])
 #                        cumulative=True)
 
 produce_rankVProb_plot(freq1, freq2, labels=["f1", "f2"],
-                       error=True)
+                       error=False)
 # fname2 = get_file_name("Cora", True, "GfNN", 6)
 # freq2 = count_frequency(fname2, width=WIDTH)
 
