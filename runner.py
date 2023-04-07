@@ -8,7 +8,6 @@ import time
 from data_handler import is_consistent, generate_mask, get_file_name, \
     write_to_file, applyAdjLayer
 import numpy as np
-from mpi4py import MPI
 
 # FIGURE OUT VALUE FOR HIDDEN LAYER SIZE AND LEARNING RATE
 
@@ -73,7 +72,8 @@ def train2_perf(model, data, mask):
     return np.array([])
 
 
-def run_simulation(dataset_name, train_it, test_num, model_type, model_depth):
+def run_simulation(dataset_name, train_it, test_num, model_type, model_depth,
+                   rank=None):
     # runs model multiple times
 
     # dataset_name: in case of cora just 'Cora'
@@ -103,7 +103,7 @@ def run_simulation(dataset_name, train_it, test_num, model_type, model_depth):
                                    name=dataset_name).to(device)
 
     fname = get_file_name(dataset_name, train_it, model_type,
-                          model_depth)
+                          model_depth, rank=rank)
 
     # Creates file if it doesn't exist
     if not exists(fname):
@@ -152,16 +152,18 @@ parser.add_argument('--train_it', type=bool, help='Whether each network '
 parser.add_argument('--model_type', type=str, help='GCN or GfNN')
 parser.add_argument('--model_depth', type=int, help='Depth of the of the '
                                                     'neural network model')
+parser.add_argument('--rank', type=int,
+                    help='Helps with multiprocessing, writes to new filename '
+                         'which is "fname_rank"')
 args = parser.parse_args()
 print(args.__dict__)
 
 
 if args.dataset_name is None:
     run_simulation(dataset_name="CiteSeer", train_it=False, test_num=400,
-               model_type='GCN', model_depth=2)
+               model_type='GCN', model_depth=3, rank=4)
 else:
     # Runs the output of the arguments
     run_simulation(dataset_name=args.dataset_name, train_it=args.train_it,
                test_num=args.test_num, model_type=args.model_type,
-               model_depth=args.model_depth)
-
+               model_depth=args.model_depth, rank=args.rank)
