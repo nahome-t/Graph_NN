@@ -3,11 +3,12 @@ import torch
 import torch.nn.functional as F
 import argparse
 from os.path import exists
-from models import GCN, GfNN, NormAdj
+from models import GCN, GfNN
 import time
 from data_handler import is_consistent, generate_mask, get_file_name, \
     write_to_file, applyAdjLayer
 import numpy as np
+from mpi4py import MPI
 
 # FIGURE OUT VALUE FOR HIDDEN LAYER SIZE AND LEARNING RATE
 

@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from models import NormAdj
 from torch_geometric.datasets import Planetoid
 
+
 def generate_mask(data_y, mask, num_classes, name, group_size=20):
     # Picks group_size*num_classes examples from the data within the mask
     # given such that such tha each class is appears group_size times (
@@ -41,12 +42,16 @@ def generate_mask(data_y, mask, num_classes, name, group_size=20):
             arr=np.array(test_mask))
     return torch.tensor(test_mask)
 
-def get_file_name(dataset_name, train_it, model_type, model_depth):
+
+def get_file_name(dataset_name, train_it, model_type, model_depth, rank=None):
     # Gets the file name that an output should be saved to given the name of
     # a dataset, whether its trained or not and the model type or depth
     extension = f'/output/{dataset_name}' \
-               f'_{"trained" if train_it else "random"}_' \
-            f'{model_type}_{model_depth}'
+                f'_{"trained" if train_it else "random"}_' \
+                f'{model_type}_{model_depth}'
+
+    if rank is not None:
+        extension += f'_{rank}'
     program_path = Path(__file__)
     fname = str(program_path.parent.absolute()) + extension
     return fname
@@ -58,14 +63,14 @@ def count_frequency(fname, binarised=False,
     # counts how often each row or 'function' occurs
     tensor = np.loadtxt(fname=fname, delimiter=',')
     if binarised:
-        tensor = tensor%2
+        tensor = tensor % 2
 
     if perm_inv:
         tensor = permutational_order(tensor)
     print(tensor.shape)
 
     if mask is not None:
-        tensor = tensor[:, mask] # Applies the mask to each row
+        tensor = tensor[:, mask]  # Applies the mask to each row
 
     print(tensor.shape)
 
@@ -92,6 +97,7 @@ def is_consistent(model, data):
 
     model.train()  # Sets it back to training mode by default
 
+
 def write_to_file(arr, fpath):
     # Takes in a 1d np array and then adds it to a csv as a row
     arr = np.reshape(arr, (1, -1))
@@ -99,7 +105,8 @@ def write_to_file(arr, fpath):
     with open(fpath, 'ab') as file:
         np.savetxt(fname=file, X=arr, delimiter=",", fmt='%d')
 
-def test_accuracy(model, data, epoch_num=None, on_training_data = True):
+
+def test_accuracy(model, data, epoch_num=None, on_training_data=True):
     # Will test on the remaining data set
     if epoch_num == 0:
         print('CHECKING ACCURACY ON TRAINING DATA') if on_training_data else \
@@ -114,7 +121,7 @@ def test_accuracy(model, data, epoch_num=None, on_training_data = True):
         test_num = mask.sum()
         prediction = model(data).argmax(dim=1)
         correct = (prediction[mask] == data.y[mask]).sum()
-        acc = int(correct)/test_num
+        acc = int(correct) / test_num
         print(f'Epoch num: {epoch_num}, Accuracy {acc:.2f}, i.e. {correct}'
               f'/{test_num}')
     model.train()
@@ -139,20 +146,21 @@ def calc_row_err(probability, test_size, depth=10, z=1):
     err[0] = probability
     err[1] = probability
     for i in range(depth):
-        err[0] = probability - z*np.sqrt(err[0] * (1 - err[0]) /
-                                    test_size)
-        err[1] = probability + z*np.sqrt(err[1] * (1 - err[1]) /
-                                    test_size)
+        err[0] = probability - z * np.sqrt(err[0] * (1 - err[0]) /
+                                           test_size)
+        err[1] = probability + z * np.sqrt(err[1] * (1 - err[1]) /
+                                           test_size)
 
     return err
 
-def produce_rankVProb_plot(*arrays, labels = None,
+
+def produce_rankVProb_plot(*arrays, labels=None,
                            title="Rank vs Probability",
                            xlabel="Rank",
                            ylabel="Probability",
                            log_scale=True,
                            cumulative=False,
-                           error = False):
+                           error=False):
     max_length = 0
     arrays = list(arrays)
 
@@ -160,19 +168,17 @@ def produce_rankVProb_plot(*arrays, labels = None,
     for i in range(len(arrays)):
         max_length = max(max_length, arrays[i].size)
         test_size[i] = np.sum(arrays[i])
-        arrays[i] = 1/np.sum(arrays[i])*arrays[i] # Normalises array
+        arrays[i] = 1 / np.sum(arrays[i]) * arrays[i]  # Normalises array
         print(np.sum(arrays[i]))
 
     rank = np.arange(1, max_length + 1)  # Rank starts with 1
     print("THIS")
 
-
-
     for i in range(len(arrays)):
         # Makes sure all the arrays are the same length
         # l = max_length-arrays[i].size
         # arrays[i] = np.concatenate((arrays[i], np.zeros(l)))
-        rank = np.arange(1, arrays[i].size+1)
+        rank = np.arange(1, arrays[i].size + 1)
         if error:
             e2 = calc_row_err(arrays[i], test_size[i], depth=5)
             plt.fill_between(rank, e2[0], e2[1],
@@ -208,6 +214,7 @@ def permutational_order(arr):
         arr[i] = np.array([val_map[val] for val in arr[i]])
     return arr
 
+
 def reduced_mask(dataset_name, group_size, org_group_size=20):
     # This produces a mask that takes in a function which has size of
     # org_group_size*num_classes and reduces it so that its now
@@ -222,12 +229,11 @@ def reduced_mask(dataset_name, group_size, org_group_size=20):
                        mask=data.train_mask, name=dataset_name).numpy()
 
     # This is subset of original mask
-    m2 = generate_mask(data_y=data.y, group_size=group_size, num_classes=num_classes,
+    m2 = generate_mask(data_y=data.y, group_size=group_size,
+                       num_classes=num_classes,
                        mask=m1, name=dataset_name).numpy()
     print(np.unique(data.y[m2].numpy(), return_counts=True))
     return m2[m1]
-
-
 
 # fname1 = get_file_name("CiteSeer", False, "GCN", 2)
 # fname2 = get_file_name("Cora", True, "GCN", 6)

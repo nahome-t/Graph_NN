@@ -1,6 +1,4 @@
-import torch
 import torch.nn as nn
-from torch import matmul, zeros
 from torch_geometric.nn import GCNConv, MessagePassing
 from torch_geometric.utils import add_self_loops, degree
 import torch.nn.functional as F
