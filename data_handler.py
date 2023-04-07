@@ -235,8 +235,8 @@ def reduced_mask(dataset_name, group_size, org_group_size=20):
     print(np.unique(data.y[m2].numpy(), return_counts=True))
     return m2[m1]
 
-fname1 = get_file_name("CiteSeer", True, "GCN", 3, 4)
-count_frequency(fname1)
+# fname1 = get_file_name("CiteSeer", True, "GCN", 3, 4)
+# count_frequency(fname1)
 # fname2 = get_file_name("Cora", True, "GCN", 6)
 
 
