@@ -48,7 +48,8 @@ def train(model, data):
         loss = F.nll_loss(output[data.train_mask], data.y[data.train_mask])
         loss.backward()  # Calculates the gradients
         optimizer.step()  # Updates the model via gradient descent
-        test_accuracy(model, data, epoch+1)  # +1 because epoch should start
+        test_accuracy(model, data, epoch+1)  # +1
+        # because epoch should start
         # from 1
     # test_accuracy(model, data, num_epochs)
 

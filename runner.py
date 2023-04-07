@@ -98,10 +98,9 @@ def run_simulation(dataset_name, train_it, test_num, model_type, model_depth,
         if model_type == "GfNN" else data
 
     # Generates mask, or loads it if it exists within file system,
-    generated_mask = generate_mask(data_y=data.y, mask=data.train_mask,
+    generated_mask = generate_mask(data_y=data.y, mask=data.test_mask,
                                    group_size=20, num_classes=num_classes,
                                    name=dataset_name).to(device)
-
     fname = get_file_name(dataset_name, train_it, model_type,
                           model_depth, rank=rank)
 
@@ -160,7 +159,7 @@ print(args.__dict__)
 
 
 if args.dataset_name is None:
-    run_simulation(dataset_name="CiteSeer", train_it=False, test_num=400,
+    run_simulation(dataset_name="CiteSeer", train_it=True, test_num=5,
                model_type='GCN', model_depth=3, rank=4)
 else:
     # Runs the output of the arguments
