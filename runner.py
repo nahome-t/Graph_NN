@@ -1,6 +1,7 @@
 from torch_geometric.datasets import Planetoid
 import torch
 import torch.nn.functional as F
+import argparse
 from os.path import exists
 from models import GCN, GfNN, NormAdj
 import time
@@ -13,8 +14,7 @@ import numpy as np
 learning_rate = 0.01  # Figure out good value?
 max_epochs = 200  # Model trained to 100% accuracy on training dataset,
 # maximum epochs represents
-hidden_layer_size = 16
-
+hidden_layer_size = 128
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -120,7 +120,7 @@ def run_simulation(dataset_name, train_it, test_num, model_type, model_depth):
         else:
             arr = model(data_used)[generated_mask].argmax(dim=1)
         # print(arr)
-        if (k+1)%200 == 0:
+        if (k + 1) % 200 == 0:
             print(f'Done {k + 1}/{test_num}')
 
         if arr.size == 0:
@@ -136,18 +136,31 @@ def run_simulation(dataset_name, train_it, test_num, model_type, model_depth):
         f'{"trained" if train_it else "random"} neural networks')
 
 
-# Used to check training times for each type of neural network
+# dataset_name, train_it, test_num, model_type, model_depth
 
-run_simulation(dataset_name="CiteSeer", train_it=False, test_num=3000,
+parser = argparse.ArgumentParser(
+    description='A program that runs two different graph neural network '
+                'models on some data, note currently for both models the '
+                'depth of the hidden layer is currently 128x128')
+parser.add_argument('--test_num', type=int, help='how many runs for each test')
+parser.add_argument('--dataset_name', type=str, help='name of dataset, '
+                                                     'Cora or CiteSeer or '
+                                                     'PubMed')
+parser.add_argument('--train_it', type=bool, help='Whether each network '
+                                                   'should train networks')
+parser.add_argument('--model_type', type=str, help='GCN or GfNN')
+parser.add_argument('--model_depth', type=int, help='Depth of the of the '
+                                                    'neural network model')
+args = parser.parse_args()
+print(args.__dict__)
+
+
+if args.dataset_name is None:
+    run_simulation(dataset_name="CiteSeer", train_it=False, test_num=400,
                model_type='GCN', model_depth=2)
+else:
+    # Runs the output of the arguments
+    run_simulation(dataset_name=args.dataset_name, train_it=args.train_it,
+               test_num=args.test_num, model_type=args.model_type,
+               model_depth=args.model_depth)
 
-# run_simulation(dataset_name="Cora", train_it=True, test_num=20000,
-#                model_type='GCN', model_depth=6)
-#
-# run_simulation(dataset_name="Cora", train_it=True, test_num=20000,
-#                model_type='GfNN', model_depth=6)
-
-# run_simulation(dataset_name="Cora", train_it=True, test_num=200000,
-#                model_type='GfNN', model_depth=6)
-# run_simulation(dataset_name="Cora", train_it=True, test_num=200000,
-#                model_type='GCN', model_depth=6)

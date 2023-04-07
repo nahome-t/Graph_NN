@@ -1,6 +1,5 @@
 # Contains functions used to read and write data
 from pathlib import Path
-
 import pandas as pd
 import torch, math
 import numpy as np
@@ -9,7 +8,7 @@ import matplotlib.pyplot as plt
 from models import NormAdj
 from torch_geometric.datasets import Planetoid
 
-def generate_mask(data_y, mask, group_size=20, num_classes=7, name="Cora"):
+def generate_mask(data_y, mask, num_classes, name, group_size=20):
     # Picks group_size*num_classes examples from the data within the mask
     # given such that such tha each class is appears group_size times (
     # assuming it can find that many)
@@ -165,20 +164,19 @@ def produce_rankVProb_plot(*arrays, labels = None,
         print(np.sum(arrays[i]))
 
     rank = np.arange(1, max_length + 1)  # Rank starts with 1
-    err_val = np.zeros((len(arrays), max_length))
-
     print("THIS")
 
 
 
     for i in range(len(arrays)):
         # Makes sure all the arrays are the same length
-        l = max_length-arrays[i].size
-        arrays[i] = np.concatenate((arrays[i], np.zeros(l)))
-
+        # l = max_length-arrays[i].size
+        # arrays[i] = np.concatenate((arrays[i], np.zeros(l)))
+        rank = np.arange(1, arrays[i].size+1)
         if error:
             e2 = calc_row_err(arrays[i], test_size[i], depth=5)
-            plt.fill_between(rank, e2[0], e2[1], alpha=0.3)
+            plt.fill_between(rank, e2[0], e2[1],
+                             alpha=0.3)
         if cumulative:
             arrays[i] = np.cumsum(arrays[i])
 
@@ -218,21 +216,21 @@ def reduced_mask(dataset_name, group_size, org_group_size=20):
     dataset = Planetoid(root=f'/tmp/{dataset_name}', name=dataset_name)
     data = dataset[0]
     num_classes = dataset.num_classes
-    # # This is the mask with 20 lots of each class
+    # # This is the mask with 20 lots of each class which is the original amount
     m1 = generate_mask(data_y=data.y, group_size=org_group_size,
                        num_classes=num_classes,
-                       mask=data.train_mask).numpy()
+                       mask=data.train_mask, name=dataset_name).numpy()
 
     # This is subset of original mask
-    m2 = generate_mask(data_y=data.y, group_size=group_size, num_classes=7,
-                       mask=m1).numpy()
+    m2 = generate_mask(data_y=data.y, group_size=group_size, num_classes=num_classes,
+                       mask=m1, name=dataset_name).numpy()
     print(np.unique(data.y[m2].numpy(), return_counts=True))
     return m2[m1]
 
 
 
-fname1 = get_file_name("Cora", True, "GfNN", 6)
-fname2 = get_file_name("Cora", True, "GCN", 6)
+# fname1 = get_file_name("CiteSeer", False, "GCN", 2)
+# fname2 = get_file_name("Cora", True, "GCN", 6)
 
 
 # unq1, freq1 = count_frequency(fname1, mask=reduced_mask(3), binarised=True)
@@ -261,9 +259,9 @@ fname2 = get_file_name("Cora", True, "GCN", 6)
 # ax.set_yscale('log')
 # plt.show()
 
-freq1 = count_frequency(fname=fname1, mask=red_mask_for_cora(5))
-produce_rankVProb_plot(freq1)
-
+# freq1 = count_frequency(fname=fname1, mask=reduced_mask("CiteSeer", 5),
+#                         binarised=True)
+# produce_rankVProb_plot(freq1)
 
 
 # print(list(sm))
