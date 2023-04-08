@@ -9,7 +9,6 @@ from data_handler import is_consistent, generate_mask, get_file_name, \
     write_to_file, applyAdjLayer
 import numpy as np
 
-
 learning_rate = 0.01  # Figure out good value?
 max_epochs = 200  # Model trained to 100% accuracy on training dataset,
 # maximum epochs represents
@@ -122,7 +121,7 @@ def run_simulation(dataset_name, train_it, test_num, model_type, model_depth,
         # print(arr)
         if (k + 1) % 1000 == 0:
             print(f'Done {k + 1}/{test_num}')
-            print(fn_epoch+1)
+            print(fn_epoch + 1)
 
         if arr.size == 0:
             continue
@@ -146,8 +145,8 @@ parser.add_argument('--test_num', type=int, help='how many runs for each test')
 parser.add_argument('--dataset_name', type=str, help='name of dataset, '
                                                      'Cora or CiteSeer or '
                                                      'PubMed')
-parser.add_argument('--train_it', type=bool, help='Whether each network '
-                                                   'should train networks')
+parser.add_argument('--train_it', type=str, help='Whether each network '
+                                                 'should train networks')
 parser.add_argument('--model_type', type=str, help='GCN or GfNN')
 parser.add_argument('--model_depth', type=int, help='Depth of the of the '
                                                     'neural network model')
@@ -156,12 +155,17 @@ parser.add_argument('--rank', type=int,
                          'which is "fname_rank"')
 args = parser.parse_args()
 
-
 if args.dataset_name is None:
     run_simulation(dataset_name="CiteSeer", train_it=True, test_num=10,
-               model_type='GfNN', model_depth=6, rank=2)
+                   model_type='GfNN', model_depth=6, rank=2)
 else:
     # Runs the output of the arguments
-    run_simulation(dataset_name=args.dataset_name, train_it=args.train_it,
-               test_num=args.test_num, model_type=args.model_type,
-               model_depth=args.model_depth, rank=args.rank)
+    # Converts train it input from a string into a boolean
+    train_it = args.train_it
+    if train_it not in {'False', 'True'}:
+        raise ValueError('Not a valid boolean string')
+    train_it = train_it == 'True'
+
+    run_simulation(dataset_name=args.dataset_name, train_it=train_it,
+                   test_num=args.test_num, model_type=args.model_type,
+                   model_depth=args.model_depth, rank=args.rank)

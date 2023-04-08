@@ -253,15 +253,21 @@ def bring_together_file(dataset_name, train_it, model_type, model_depth):
     combined_txt = ""
     for file in files:
         with open(file, 'r') as f:
-            combined_txt += f.read() + "\n"
+            combined_txt += f.read()
     print(combined_txt)
+    print((len(combined_txt))/240)
     fname = get_file_name(dataset_name, train_it, model_type, model_depth)
     # # write the combined text to a new file
     # Add a section here that asks you to confirm before you send it off if
     # it already exists (prevents multiple writes to the same file)
 
-    with open(fname, 'w') as f:
-        f.write(combined_txt)
+    # if exists(fname):
+    #     if input('Enter y if you want to continue, this file already '
+    #              'exists... ') != 'y':
+    #         return None
+    #     else:
+    #         with open(fname, 'a') as f:
+    #             f.write(combined_txt)
 
 bring_together_file('CiteSeer', True, 'GfNN', 6)
 
