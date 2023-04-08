@@ -9,7 +9,6 @@ from data_handler import is_consistent, generate_mask, get_file_name, \
     write_to_file, applyAdjLayer
 import numpy as np
 
-# FIGURE OUT VALUE FOR HIDDEN LAYER SIZE AND LEARNING RATE
 
 learning_rate = 0.01  # Figure out good value?
 max_epochs = 200  # Model trained to 100% accuracy on training dataset,
@@ -51,7 +50,7 @@ def train2_perf(model, data, mask):
         if is_consistent(model=model, data=data):
             # print(f'A model with 100% accuracy was found at epoch {i}')
             with torch.no_grad():
-                return model(data)[mask].argmax(dim=1).detach().cpu().numpy()
+                return i, model(data)[mask].argmax(dim=1).detach().cpu().numpy()
 
         optimizer.zero_grad()
         output = model(data)
@@ -116,15 +115,16 @@ def run_simulation(dataset_name, train_it, test_num, model_type, model_depth,
         # If we want our test to train neural network it'll train it,
         # otherwise it'll just apply our model to data
         if train_it:
-            arr = train2_perf(model, data_used, generated_mask)
+            fn_epoch, arr = train2_perf(model, data_used, generated_mask)
+
         else:
             arr = model(data_used)[generated_mask].argmax(dim=1)
         # print(arr)
-        if (k + 1) % 200 == 0:
+        if (k + 1) % 1000 == 0:
             print(f'Done {k + 1}/{test_num}')
+            print(fn_epoch+1)
 
         if arr.size == 0:
-            print('gg')
             continue
 
         write_to_file(arr, fname)
@@ -155,12 +155,11 @@ parser.add_argument('--rank', type=int,
                     help='Helps with multiprocessing, writes to new filename '
                          'which is "fname_rank"')
 args = parser.parse_args()
-print(args.__dict__)
 
 
 if args.dataset_name is None:
-    run_simulation(dataset_name="CiteSeer", train_it=True, test_num=5,
-               model_type='GCN', model_depth=3, rank=4)
+    run_simulation(dataset_name="CiteSeer", train_it=True, test_num=10,
+               model_type='GfNN', model_depth=6, rank=4)
 else:
     # Runs the output of the arguments
     run_simulation(dataset_name=args.dataset_name, train_it=args.train_it,
