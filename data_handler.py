@@ -7,6 +7,7 @@ from os.path import exists
 import matplotlib.pyplot as plt
 from models import NormAdj
 from torch_geometric.datasets import Planetoid
+from os import listdir
 
 
 def generate_mask(data_y, mask, num_classes, name, group_size=20):
@@ -234,6 +235,35 @@ def reduced_mask(dataset_name, group_size, org_group_size=20):
                        mask=m1, name=dataset_name).numpy()
     print(np.unique(data.y[m2].numpy(), return_counts=True))
     return m2[m1]
+
+def bring_together_file(dataset_name, train_it, model_type, model_depth):
+    # FINISH THIS PART OF THE CODE
+    program_path = Path(__file__)
+    path_to_output = str(program_path.parent.absolute()) + '/output/'
+
+
+    print(path_to_output)
+    # Gets a list of filenames all with the same rank
+    file_names = [filename for filename in listdir(path_to_output) if
+             filename.startswith(f'{dataset_name}'
+                                 f'_{"trained" if train_it else "random"}_'
+                                 f'{model_type}_{model_depth}')]
+
+    files = [path_to_output+f1 for f1 in file_names]
+    combined_txt = ""
+    for file in files:
+        with open(file, 'r') as f:
+            combined_txt += f.read() + "\n"
+    print(combined_txt)
+    fname = get_file_name(dataset_name, train_it, model_type, model_depth)
+    # # write the combined text to a new file
+    # Add a section here that asks you to confirm before you send it off if
+    # it already exists (prevents multiple writes to the same file)
+
+    with open(fname, 'w') as f:
+        f.write(combined_txt)
+
+bring_together_file('CiteSeer', True, 'GfNN', 6)
 
 # fname1 = get_file_name("CiteSeer", True, "GCN", 3, 4)
 # count_frequency(fname1)

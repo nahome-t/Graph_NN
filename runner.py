@@ -159,7 +159,7 @@ args = parser.parse_args()
 
 if args.dataset_name is None:
     run_simulation(dataset_name="CiteSeer", train_it=True, test_num=10,
-               model_type='GfNN', model_depth=6, rank=4)
+               model_type='GfNN', model_depth=6, rank=2)
 else:
     # Runs the output of the arguments
     run_simulation(dataset_name=args.dataset_name, train_it=args.train_it,
