@@ -37,7 +37,7 @@ def generate_model(GNN_type, depth, num_features, num_classes):
     return model.to(device)
 
 
-def train2_perf(model, data, mask):
+def train2_perf(model, data, mask, pr_epoch=False):
     # A slightly altered training method, model is trained to 100% accuracy
     # on training data, this model is then applied to the data with the mask
     # given by one of the parameters (in this case the generated test mask),
@@ -49,7 +49,9 @@ def train2_perf(model, data, mask):
         if is_consistent(model=model, data=data):
             # print(f'A model with 100% accuracy was found at epoch {i}')
             with torch.no_grad():
-                return i, model(data)[mask].argmax(dim=1).detach().cpu().numpy()
+                if pr_epoch == True:
+                    print(f'epoch num: {i + 1}')
+                return model(data)[mask].argmax(dim=1).detach().cpu().numpy()
 
         optimizer.zero_grad()
         output = model(data)
@@ -113,15 +115,17 @@ def run_simulation(dataset_name, train_it, test_num, model_type, model_depth,
                                num_features=data.num_features)
         # If we want our test to train neural network it'll train it,
         # otherwise it'll just apply our model to data
+        printer = (k + 1) % 1000 == 0
         if train_it:
-            fn_epoch, arr = train2_perf(model, data_used, generated_mask)
-
+            arr = train2_perf(model, data_used, generated_mask,
+                              pr_epoch=printer)
         else:
             arr = model(data_used)[generated_mask].argmax(dim=1)
         # print(arr)
-        if (k + 1) % 1000 == 0:
-            print(f'Done {k + 1}/{test_num}')
-            print(fn_epoch + 1)
+        if printer:
+            print(f'Done {k + 1}/{test_num}, dataset_name: {dataset_name}, '
+                  f'model type: {model_type}, model depth: {model_depth}, '
+                  f'train_it: {train_it}')
 
         if arr.size == 0:
             continue
