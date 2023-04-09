@@ -44,10 +44,15 @@ def generate_mask(data_y, mask, num_classes, name, group_size=20):
     return torch.tensor(test_mask)
 
 
-def get_file_name(dataset_name, train_it, model_type, model_depth, rank=None):
+def get_file_name(dataset_name, train_it, model_type, model_depth, rank=None,
+                  prefix=None):
     # Gets the file name that an output should be saved to given the name of
     # a dataset, whether its trained or not and the model type or depth
-    extension = f'/output/{dataset_name}' \
+
+    if prefix == None:
+        prefix = '/output/'
+
+    extension = f'{prefix}{dataset_name}' \
                 f'_{"trained" if train_it else "random"}_' \
                 f'{model_type}_{model_depth}'
 
@@ -174,6 +179,9 @@ def produce_rankVProb_plot(*arrays, labels=None,
 
     rank = np.arange(1, max_length + 1)  # Rank starts with 1
     print("THIS")
+    fig = plt.figure()
+    ax = fig.add_subplot()
+    ax.set_box_aspect(1)
 
     for i in range(len(arrays)):
         # Makes sure all the arrays are the same length
@@ -236,10 +244,15 @@ def reduced_mask(dataset_name, group_size, org_group_size=20):
     print(np.unique(data.y[m2].numpy(), return_counts=True))
     return m2[m1]
 
-def bring_together_file(dataset_name, train_it, model_type, model_depth):
+def bring_together_file(dataset_name, train_it, model_type, model_depth,
+                        prefix=None):
     # FINISH THIS PART OF THE CODE
     program_path = Path(__file__)
-    path_to_output = str(program_path.parent.absolute()) + '/output/'
+    if prefix is None:
+        prefix = '/output/'
+
+    path_to_output = str(program_path.parent.absolute()) + prefix
+
 
 
     print(path_to_output)
@@ -248,6 +261,8 @@ def bring_together_file(dataset_name, train_it, model_type, model_depth):
              filename.startswith(f'{dataset_name}'
                                  f'_{"trained" if train_it else "random"}_'
                                  f'{model_type}_{model_depth}')]
+    print('Ok bringing together')
+    print(file_names)
 
     files = [path_to_output+f1 for f1 in file_names]
     combined_txt = ""
@@ -256,26 +271,37 @@ def bring_together_file(dataset_name, train_it, model_type, model_depth):
             combined_txt += f.read()
     # print(combined_txt)
     # print((len(combined_txt))/240)
-    fname = get_file_name(dataset_name, train_it, model_type, model_depth)
+    fname = get_file_name(dataset_name, train_it, model_type, model_depth,
+                          prefix=prefix)
+    print(fname)
     # # write the combined text to a new file
     # Add a section here that asks you to confirm before you send it off if
     # it already exists (prevents multiple writes to the same file)
 
-    # if exists(fname):
-    #     if input('Enter y if you want to continue, this file already '
-    #              'exists... ') != 'y':
-    #         return None
-    #     else:
-    #         with open(fname, 'a') as f:
-    #             f.write(combined_txt)
+    if exists(fname):
+        if input('Enter y if you want to continue, this file already '
+                 'exists... ') != 'y':
+            return None
 
-# bring_together_file('CiteSeer', True, 'GfNN', 6)
+    with open(fname, 'a') as f:
+        f.write(combined_txt)
 
-# fname1 = get_file_name("CiteSeer", True, "GCN", 3, 4)
+
+pre = '/output2/output/'
+bring_together_file('CiteSeer', True, 'GfNN', 2, prefix=pre)
+
+
+fname1 = get_file_name("CiteSeer", True, "GfNN", 2, prefix=pre)
+freq1 = count_frequency(fname1, mask=reduced_mask('CiteSeer', 3),
+                        binarised=True)
+#
+# produce_rankVProb_plot(freq1, error=True)
 # count_frequency(fname1)
 # fname2 = get_file_name("Cora", True, "GCN", 6)
 
 
+
+# CODE FOR PRODUCING PROB V PROB PLOT, ENTER INTO FUNCTION
 # unq1, freq1 = count_frequency(fname1, mask=reduced_mask(3), binarised=True)
 # unq2, freq2 = count_frequency(fname2, mask=red_mask_for_cora(3), binarised=True)
 #
