@@ -88,10 +88,7 @@ class GfNN(nn.Module):
 
         self.linear_hidden_layers = nn.ModuleList([nn.Linear(
             in_features=hidden_layer_size, out_features=hidden_layer_size)
-            for _ in range(k-2)])
-
-        self.conv_to_hidden = GCNConv(in_channels=in_features,
-                                      out_channels=hidden_layer_size)
+            for _ in range(k-1)])
 
         # Final layer that outputs to output vector
         self.out_linear = nn.Linear(in_features=hidden_layer_size,
@@ -110,12 +107,8 @@ class GfNN(nn.Module):
         # Gives option to apply adjacency layer or not, if not effectively
         # just a MLP applied to feature vectors
         if self.adj_layer:
-            for _ in range(self.k-1):
+            for _ in range(self.k):
                 h = self.adj(h, edge_index)  # Can be applied multiple times
-
-        # Effectively an adjacency layer and a linear layer which takes
-        # feature vectors from dim=in_features to dim=hidden_layer_size
-        h = self.conv_to_hidden(h, edge_index)
 
         for lin_layer in self.linear_hidden_layers:
             h = lin_layer(h)

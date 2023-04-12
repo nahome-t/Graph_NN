@@ -1,4 +1,5 @@
 # Contains functions used to read and write data
+import os
 from pathlib import Path
 import pandas as pd
 import torch, math
@@ -63,11 +64,15 @@ def get_file_name(dataset_name, train_it, model_type, model_depth, rank=None,
     return fname
 
 
-def count_frequency(fname, binarised=False,
-                    perm_inv=False, mask=None, return_unq=False):
+def count_frequency(fname=None, binarised=False,
+                    perm_inv=False, mask=None, return_unq=False, matrix=None):
     # Gets  data from file, changes it into 2D numpy tensor and effectively
     # counts how often each row or 'function' occurs
-    tensor = np.loadtxt(fname=fname, delimiter=',')
+    if matrix is None:
+        tensor = np.loadtxt(fname=fname, delimiter=',')
+    else:
+        tensor = matrix
+
     if binarised:
         tensor = tensor % 2
 
@@ -159,6 +164,15 @@ def calc_row_err(probability, test_size, depth=10, z=1):
 
     return err
 
+def theoretical_val(func_len, output_len, cut_off_rank=1, p_vio=0, classes=2):
+    C = (1-p_vio)/(func_len*math.log(classes)-math.log(cut_off_rank))
+
+    x = np.arange(1, output_len+1)
+    y = C/x
+    print(x)
+    print(C)
+    return x, y
+
 
 def produce_rankVProb_plot(*arrays, labels=None,
                            title="Rank vs Probability",
@@ -166,7 +180,9 @@ def produce_rankVProb_plot(*arrays, labels=None,
                            ylabel="Probability",
                            log_scale=True,
                            cumulative=False,
-                           error=False):
+                           error=False,
+                           theoretical=False, function_length=None,
+                           fname=None):
     max_length = 0
     arrays = list(arrays)
 
@@ -177,11 +193,12 @@ def produce_rankVProb_plot(*arrays, labels=None,
         arrays[i] = 1 / np.sum(arrays[i]) * arrays[i]  # Normalises array
         print(np.sum(arrays[i]))
 
-    rank = np.arange(1, max_length + 1)  # Rank starts with 1
     print("THIS")
     fig = plt.figure()
     ax = fig.add_subplot()
     ax.set_box_aspect(1)
+    ax.set_xlim([1, 1e8])
+    ax.set_ylim([1e-8, 1])
 
     for i in range(len(arrays)):
         # Makes sure all the arrays are the same length
@@ -196,11 +213,23 @@ def produce_rankVProb_plot(*arrays, labels=None,
             arrays[i] = np.cumsum(arrays[i])
 
         if labels:
-            plt.plot(rank, arrays[i], label=labels[i])
+            p = plt.plot(rank, arrays[i], label=labels[i])
             plt.legend()
         else:
-            plt.plot(rank, arrays[i])
+            p = plt.plot(rank, arrays[i])
             print('hehe')
+
+        if theoretical:
+            if function_length==None:
+                raise TypeError("Function length isn't specified...")
+            c = 30
+            x_fit, y_fit = theoretical_val(func_len=function_length,
+                                        output_len=len(
+                arrays[i]), p_vio=arrays[i][:c].sum(), cut_off_rank=c+1)
+            plt.plot(x_fit, y_fit, linestyle='dotted', color=p[0].get_color())
+
+            print(f'Violating probabilities '
+                  f'{arrays[i][:2]}, {arrays[i][:2].sum()}')
 
         plt.xlabel('Rank')
         plt.ylabel('Probability')
@@ -208,7 +237,8 @@ def produce_rankVProb_plot(*arrays, labels=None,
     if log_scale:
         plt.xscale('log')
         plt.yscale('log')
-
+    if fname:
+        plt.savefig(fname, bbox_inches='tight')
     plt.show()
 
 
@@ -230,6 +260,7 @@ def reduced_mask(dataset_name, group_size, org_group_size=20):
     # group_size*num_classes, i.e. just reduces size of function so that in
     # our new function it has a certain amount of each function
     dataset = Planetoid(root=f'/tmp/{dataset_name}', name=dataset_name)
+    print('Getting reduced mask :)')
     data = dataset[0]
     num_classes = dataset.num_classes
     # # This is the mask with 20 lots of each class which is the original amount
@@ -245,15 +276,13 @@ def reduced_mask(dataset_name, group_size, org_group_size=20):
     return m2[m1]
 
 def bring_together_file(dataset_name, train_it, model_type, model_depth,
-                        prefix=None):
+                        prefix=None, del_it=False, save_it=True):
     # FINISH THIS PART OF THE CODE
     program_path = Path(__file__)
     if prefix is None:
         prefix = '/output/'
 
     path_to_output = str(program_path.parent.absolute()) + prefix
-
-
 
     print(path_to_output)
     # Gets a list of filenames all with the same rank
@@ -264,7 +293,7 @@ def bring_together_file(dataset_name, train_it, model_type, model_depth,
     print('Ok bringing together')
     print(file_names)
 
-    files = [path_to_output+f1 for f1 in file_names]
+    files = sorted([path_to_output+f1 for f1 in file_names])
     combined_txt = ""
     for file in files:
         with open(file, 'r') as f:
@@ -274,6 +303,7 @@ def bring_together_file(dataset_name, train_it, model_type, model_depth,
     fname = get_file_name(dataset_name, train_it, model_type, model_depth,
                           prefix=prefix)
     print(fname)
+    print(len(combined_txt)/240)
     # # write the combined text to a new file
     # Add a section here that asks you to confirm before you send it off if
     # it already exists (prevents multiple writes to the same file)
@@ -283,19 +313,42 @@ def bring_together_file(dataset_name, train_it, model_type, model_depth,
                  'exists... ') != 'y':
             return None
 
-    with open(fname, 'a') as f:
-        f.write(combined_txt)
+    if save_it:
+        with open(fname, 'a') as f:
+            f.write(combined_txt)
+
+    if del_it:
+        for file in files:
+            os.remove(file)
+
+# bring_together_file('CiteSeer', False, 'GfNN', 6, prefix=pre, del_it=False,
+#                     save_it=True)
+
+def wrap_it_all_up_Cite(train_it, model_type, depth, prefix='/bring/'):
+
+    fname1 = get_file_name("CiteSeer", train_it, model_type, depth,
+                           prefix=prefix)
+    freq1 = count_frequency(fname1, binarised=True)
+    np.save(arr=freq1, file=get_file_name("CiteSeer", train_it, model_type,
+                                          depth, rank=120, prefix='/freq/'))
+
+    # produce_rankVProb_plot(freq1, error=True)
+
+# wrap_it_all_up_Cite(False, 'GCN', 2)
+# wrap_it_all_up_Cite(False, 'GfNN', 2)
+# wrap_it_all_up_Cite(False, 'GCN', 6)
+# wrap_it_all_up_Cite(False, 'GfNN', 6)
 
 
-pre = '/output2/output/'
-bring_together_file('CiteSeer', True, 'GfNN', 2, prefix=pre)
+train_it = False
+depth = 6
+model = 'GCN'
+f1 = get_file_name('CiteSeer', train_it, model, depth, prefix='/freq/')
+f2 = get_file_name('CiteSeer', train_it, model, depth, prefix='/plots/')
+freq1 = np.load(f1 + ".npy")
+produce_rankVProb_plot(freq1, theoretical=True, function_length=24, labels=[
+    f'{model}, depth: {depth}, function length: 24'], fname=f2)
 
-
-fname1 = get_file_name("CiteSeer", True, "GfNN", 2, prefix=pre)
-freq1 = count_frequency(fname1, mask=reduced_mask('CiteSeer', 3),
-                        binarised=True)
-#
-# produce_rankVProb_plot(freq1, error=True)
 # count_frequency(fname1)
 # fname2 = get_file_name("Cora", True, "GCN", 6)
 
