@@ -88,11 +88,13 @@ class GfNN(nn.Module):
 
         self.linear_hidden_layers = nn.ModuleList([nn.Linear(
             in_features=hidden_layer_size, out_features=hidden_layer_size)
-            for _ in range(k-1)])
+            for _ in range(k-2)])
 
         # Final layer that outputs to output vector
         self.out_linear = nn.Linear(in_features=hidden_layer_size,
                                     out_features=out_features, bias=False)
+        self.to_hidden_lin = nn.Linear(in_features=in_features,
+                                out_features=hidden_layer_size)
 
         self.adj_layer = adj_layer
         self.adj = NormAdj()
@@ -110,6 +112,9 @@ class GfNN(nn.Module):
         if self.adj_layer:
             for _ in range(self.k):
                 h = self.adj(h, edge_index)
+
+        h = self.to_hidden_lin(h)
+        h = F.relu(h)
 
         for lin_layer in self.linear_hidden_layers:
             h = lin_layer(h)
