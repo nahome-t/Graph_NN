@@ -340,14 +340,14 @@ def wrap_it_all_up_Cite(train_it, model_type, depth, prefix='/bring/'):
 # wrap_it_all_up_Cite(False, 'GfNN', 6)
 
 
-train_it = False
-depth = 6
-model = 'GCN'
-f1 = get_file_name('CiteSeer', train_it, model, depth, prefix='/freq/')
-f2 = get_file_name('CiteSeer', train_it, model, depth, prefix='/plots/')
-freq1 = np.load(f1 + ".npy")
-produce_rankVProb_plot(freq1, theoretical=True, function_length=24, labels=[
-    f'{model}, depth: {depth}, function length: 24'], fname=f2)
+# train_it = False
+# depth = 6
+# model = 'GCN'
+# f1 = get_file_name('CiteSeer', train_it, model, depth, prefix='/freq/')
+# f2 = get_file_name('CiteSeer', train_it, model, depth, prefix='/plots/')
+# freq1 = np.load(f1 + ".npy")
+# produce_rankVProb_plot(freq1, theoretical=True, function_length=24, labels=[
+#     f'{model}, depth: {depth}, function length: 24'], fname=f2)
 
 # count_frequency(fname1)
 # fname2 = get_file_name("Cora", True, "GCN", 6)

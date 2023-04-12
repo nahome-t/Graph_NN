@@ -105,10 +105,11 @@ class GfNN(nn.Module):
         # linear layer
 
         # Gives option to apply adjacency layer or not, if not effectively
-        # just a MLP applied to feature vectors
+        # just a MLP applied to feature vectors, when run on hydra adjacency
+        # layers will be pre-computed to ease computation
         if self.adj_layer:
             for _ in range(self.k):
-                h = self.adj(h, edge_index)  # Can be applied multiple times
+                h = self.adj(h, edge_index)
 
         for lin_layer in self.linear_hidden_layers:
             h = lin_layer(h)
