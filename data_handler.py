@@ -321,36 +321,36 @@ def bring_together_file(dataset_name, train_it, model_type, model_depth,
         for file in files:
             os.remove(file)
 
-# bring_together_file('CiteSeer', False, 'GfNN', 6, prefix=pre, del_it=False,
-#                     save_it=True)
 
 def wrap_it_all_up_Cite(train_it, model_type, depth, prefix='/bring/'):
 
     fname1 = get_file_name("CiteSeer", train_it, model_type, depth,
                            prefix=prefix)
-    freq1 = count_frequency(fname1, binarised=True)
+    freq1 = count_frequency(fname1, binarised=True, mask=reduced_mask(
+        'CiteSeer', group_size=4))
     np.save(arr=freq1, file=get_file_name("CiteSeer", train_it, model_type,
-                                          depth, rank=120, prefix='/freq/'))
+                                          depth, rank=2400, prefix='/freq/'))
 
     # produce_rankVProb_plot(freq1, error=True)
 
-# wrap_it_all_up_Cite(False, 'GCN', 2)
-# wrap_it_all_up_Cite(False, 'GfNN', 2)
-# wrap_it_all_up_Cite(False, 'GCN', 6)
-# wrap_it_all_up_Cite(False, 'GfNN', 6)
 
+
+# wrap_it_all_up_Cite(False, 'GfNN', 2)
+# wrap_it_all_up_Cite(False, 'GfNN', 6)
+#
 
 # train_it = False
-# depth = 6
-# model = 'GCN'
-# f1 = get_file_name('CiteSeer', train_it, model, depth, prefix='/freq/')
-# f2 = get_file_name('CiteSeer', train_it, model, depth, prefix='/plots/')
+# depth = 2
+# model = 'GfNN'
+# f1 = get_file_name('CiteSeer', train_it, model, depth, prefix='/freq/',
+#                    rank=2400)
+# f2 = get_file_name('CiteSeer_X', train_it, model, depth, prefix='/plots/')
 # freq1 = np.load(f1 + ".npy")
 # produce_rankVProb_plot(freq1, theoretical=True, function_length=24, labels=[
 #     f'{model}, depth: {depth}, function length: 24'], fname=f2)
+#
 
-# count_frequency(fname1)
-# fname2 = get_file_name("Cora", True, "GCN", 6)
+
 
 
 

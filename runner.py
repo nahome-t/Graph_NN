@@ -128,6 +128,7 @@ def run_simulation(dataset_name, train_it, test_num, model_type, model_depth,
                   f'train_it: {train_it}')
 
         if arr.size == 0:
+            # Will be case if GNN not found within max epoch
             continue
 
         write_to_file(arr, fname)
@@ -161,7 +162,7 @@ args = parser.parse_args()
 
 if args.dataset_name is None:
     run_simulation(dataset_name="CiteSeer", train_it=True, test_num=10,
-                   model_type='GfNN', model_depth=6, rank=2)
+                   model_type='GfNN', model_depth=2, rank=25557)
 else:
     # Runs the output of the arguments
     # Converts train it input from a string into a boolean

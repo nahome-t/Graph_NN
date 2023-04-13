@@ -17,7 +17,7 @@ class GCN(nn.Module):
             [GCNConv(hidden_layer_size, hidden_layer_size) for _
              in range(depth - 2)])
         self.out_conv = GCNConv(in_channels=hidden_layer_size,
-                                out_channels=out_features, bias=False)
+                                out_channels=out_features)
 
     def forward(self, data):
         h, edge_index = data.x, data.edge_index
@@ -92,7 +92,7 @@ class GfNN(nn.Module):
 
         # Final layer that outputs to output vector
         self.out_linear = nn.Linear(in_features=hidden_layer_size,
-                                    out_features=out_features, bias=False)
+                                    out_features=out_features)
         self.to_hidden_lin = nn.Linear(in_features=in_features,
                                 out_features=hidden_layer_size)
 
