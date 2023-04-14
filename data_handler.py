@@ -324,8 +324,16 @@ def bring_together_file(dataset_name, train_it, model_type, model_depth,
 
 
 def wrap_it_all_up_Cite(train_it, model_type, model_depth,
-                        output_prefix='/output/',
-                        freq_prefix='/freq/', rank=None, group_size=4):
+                        output_prefix=None,
+                        freq_prefix=None, rank=None, group_size=None):
+
+    if output_prefix is None:
+        output_prefix = '/output'
+
+    if freq_prefix is None:
+        freq_prefix = '/freq/'
+    if group_size is None:
+        print('No group size given, assuming no mask needed')
 
     # Brings together file and outputs it in the same spot as all the outputs
     bring_together_file('CiteSeer', train_it, model_type, model_depth,
@@ -348,54 +356,55 @@ def wrap_it_all_up_Cite(train_it, model_type, model_depth,
 # wrap_it_all_up_Cite(False, 'GfNN', 2, output_prefix='/output5/output/',
 #                     rank=None)
 
+
 # train_it = False
-# depth = 20
-# model = 'GfNN'
-#
-# f1 = get_file_name('CiteSeer', train_it, model, depth, prefix='/freq/',
-#                    rank=4800)
-# f2 = get_file_name('CiteSeer_X', train_it, model, depth, prefix='/plots/')
+# depth = 6
+# model = 'GCN'
+# #
+# f1 = get_file_name('CiteSeer', train_it, model, depth, prefix=
+# '/output_final_hopefully/freq/')
 # freq1 = np.load(f1 + ".npy")
+# f2 = get_file_name('CiteSeer_OFF', train_it, model, depth, prefix='/plots/')
 # produce_rankVProb_plot(freq1, theoretical=True, function_length=24, labels=[
-#     f'{model}, depth: {depth}, function length: 24'], fname=f2)
-#
+#     f'{model}, depth: {depth}, function length: 24'])
+
 # COMPLETE THIS ASAP
-parser = argparse.ArgumentParser(
+parser2 = argparse.ArgumentParser(
     description='Auto running wrap it all up Cite, where it wraps it all up '
                 'for the CiteSeer tests and produces our frequency vs '
                 'probability plot')
-parser.add_argument('--model_type', type=str, help='GCN or GfNN')
-parser.add_argument('--train_it', type=str, help='True or False')
-parser.add_argument('--model_depth', type=int, help='Depth of the of the '
+parser2.add_argument('--model_type', type=str, help='GCN or GfNN')
+parser2.add_argument('--train_it', type=str, help='True or False')
+parser2.add_argument('--model_depth', type=int, help='Depth of the of the '
                                                     'neural network model')
-parser.add_argument('--output_prefix', type=str,
-                    help='What folder the output is stored in e.g. "/output/" '
+parser2.add_argument('--output_prefix', type=str,
+                     help='What folder the output is stored in e.g. "/output/" '
                          'by default')
-parser.add_argument('--freq_prefix', type=str,
-                    help='What folder the frequency data is stored in e.g. '
+parser2.add_argument('--freq_prefix', type=str,
+                     help='What folder the frequency data is stored in e.g. '
                          '"/freq/" by default')
-parser.add_argument('--rank', type=int,
-                    help='Helps with multiprocessing, writes to new filename '
+parser2.add_argument('--rank', type=int,
+                     help='Helps with multiprocessing, writes to new filename '
                          'which is "fname_rank", be wary of using this as '
                          'files normally saved with rank between 1-1000 when '
                          'multiprocessing')
-parser.add_argument('--group_size', type=int,
-                    help='How much of each class do you want in function')
-args = parser.parse_args()
+parser2.add_argument('--group_size', type=int,
+                     help='How much of each class do you want in function')
+args2 = parser2.parse_args()
 
 
-if args.model_type is not None:
-    train_it = args.train_it
+if args2.model_type is not None:
+    train_it = args2.train_it
     if train_it not in {'False', 'True'}:
         raise ValueError('Not a valid boolean string')
     train_it = train_it == 'True'
-    print(args)
+    print(args2)
 
-    wrap_it_all_up_Cite(train_it=train_it, model_type=args.model_type,
-                        model_depth=args.model_depth,
-                        output_prefix=args.output_prefix,
-                        freq_prefix=args.freq_prefix, rank=args.rank,
-                        group_size=args.group_size)
+    wrap_it_all_up_Cite(train_it=train_it, model_type=args2.model_type,
+                        model_depth=args2.model_depth,
+                        output_prefix=args2.output_prefix,
+                        freq_prefix=args2.freq_prefix, rank=args2.rank,
+                        group_size=args2.group_size)
 
 
 

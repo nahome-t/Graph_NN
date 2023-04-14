@@ -161,8 +161,8 @@ parser.add_argument('--rank', type=int,
 args = parser.parse_args()
 
 if args.dataset_name is None:
-    run_simulation(dataset_name="CiteSeer", train_it=True, test_num=10,
-                   model_type='GfNN', model_depth=2, rank=25557)
+    run_simulation(dataset_name="CiteSeer", train_it=False, test_num=200000,
+                   model_type='GCN', model_depth=2, rank=25557)
 else:
     # Runs the output of the arguments
     # Converts train it input from a string into a boolean
