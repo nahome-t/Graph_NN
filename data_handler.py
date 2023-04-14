@@ -51,7 +51,6 @@ def get_file_name(dataset_name, train_it, model_type, model_depth, rank=None,
     # Gets the file name that an output should be saved to given the name of
     # a dataset, whether its trained or not and the model type or depth
 
-
     extension = f'{prefix}{dataset_name}' \
                 f'_{"trained" if train_it else "random"}_' \
                 f'{model_type}_{model_depth}'
@@ -163,11 +162,12 @@ def calc_row_err(probability, test_size, depth=10, z=1):
 
     return err
 
-def theoretical_val(func_len, output_len, cut_off_rank=1, p_vio=0, classes=2):
-    C = (1-p_vio)/(func_len*math.log(classes)-math.log(cut_off_rank))
 
-    x = np.arange(1, output_len+1)
-    y = C/x
+def theoretical_val(func_len, output_len, cut_off_rank=1, p_vio=0, classes=2):
+    C = (1 - p_vio) / (func_len * math.log(classes) - math.log(cut_off_rank))
+
+    x = np.arange(1, output_len + 1)
+    y = C / x
     print(x)
     print(C)
     return x, y
@@ -219,12 +219,14 @@ def produce_rankVProb_plot(*arrays, labels=None,
             print('hehe')
 
         if theoretical:
-            if function_length==None:
+            if function_length == None:
                 raise TypeError("Function length isn't specified...")
             c = 30
             x_fit, y_fit = theoretical_val(func_len=function_length,
-                                        output_len=len(
-                arrays[i]), p_vio=arrays[i][:c].sum(), cut_off_rank=c+1)
+                                           output_len=len(
+                                               arrays[i]),
+                                           p_vio=arrays[i][:c].sum(),
+                                           cut_off_rank=c + 1)
             plt.plot(x_fit, y_fit, linestyle='dotted', color=p[0].get_color())
 
             print(f'Violating probabilities '
@@ -274,6 +276,7 @@ def reduced_mask(dataset_name, group_size, org_group_size=20):
     print(np.unique(data.y[m2].numpy(), return_counts=True))
     return m2[m1]
 
+
 def bring_together_file(dataset_name, train_it, model_type, model_depth,
                         f_prefix, output_prefix, del_it=False, save_it=True,
                         rank=None):
@@ -289,11 +292,11 @@ def bring_together_file(dataset_name, train_it, model_type, model_depth,
                     f'{model_type}_{model_depth}'
     # Gets a list of filenames all with the same rank
     file_names = [filename for filename in listdir(path_to_output) if
-             filename.startswith(starting_with)]
+                  filename.startswith(starting_with)]
     print(f'Ok bringing together starting with: {starting_with}')
     print(file_names)
 
-    files = sorted([path_to_output+f1 for f1 in file_names])
+    files = sorted([path_to_output + f1 for f1 in file_names])
     combined_txt = ""
     for file in files:
         with open(file, 'r') as f:
@@ -302,9 +305,9 @@ def bring_together_file(dataset_name, train_it, model_type, model_depth,
     # print((len(combined_txt))/240)
     output_fname = get_file_name(dataset_name, train_it, model_type,
                                  model_depth,
-                          prefix=output_prefix, rank=rank)
+                                 prefix=output_prefix, rank=rank)
     print(output_fname)
-    print(len(combined_txt)/240)
+    print(len(combined_txt) / 240)
     # # write the combined text to a new file
     # Add a section here that asks you to confirm before you send it off if
     # it already exists (prevents multiple writes to the same file)
@@ -326,7 +329,6 @@ def bring_together_file(dataset_name, train_it, model_type, model_depth,
 def wrap_it_all_up_Cite(train_it, model_type, model_depth,
                         output_prefix=None,
                         freq_prefix=None, rank=None, group_size=None):
-
     if output_prefix is None:
         output_prefix = '/output'
 
@@ -337,20 +339,19 @@ def wrap_it_all_up_Cite(train_it, model_type, model_depth,
 
     # Brings together file and outputs it in the same spot as all the outputs
     bring_together_file('CiteSeer', train_it, model_type, model_depth,
-                        f_prefix=output_prefix, output_prefix=output_prefix, rank=rank)
+                        f_prefix=output_prefix, output_prefix=output_prefix,
+                        rank=rank)
     print('ggg')
     # Gets this file
     combined_file = get_file_name("CiteSeer", train_it, model_type, model_depth,
-                           prefix=output_prefix, rank=rank)
+                                  prefix=output_prefix, rank=rank)
     # Counts frequency
     freq1 = count_frequency(combined_file, binarised=True, mask=reduced_mask(
         'CiteSeer', group_size=group_size))
 
     np.save(arr=freq1, file=get_file_name("CiteSeer", train_it, model_type,
-                                          model_depth, rank=rank, prefix=freq_prefix))
-
-
-
+                                          model_depth, rank=rank,
+                                          prefix=freq_prefix))
 
 
 # wrap_it_all_up_Cite(False, 'GfNN', 2, output_prefix='/output5/output/',
@@ -368,45 +369,43 @@ def wrap_it_all_up_Cite(train_it, model_type, model_depth,
 # produce_rankVProb_plot(freq1, theoretical=True, function_length=24, labels=[
 #     f'{model}, depth: {depth}, function length: 24'])
 
-# COMPLETE THIS ASAP
-parser2 = argparse.ArgumentParser(
-    description='Auto running wrap it all up Cite, where it wraps it all up '
-                'for the CiteSeer tests and produces our frequency vs '
-                'probability plot')
-parser2.add_argument('--model_type', type=str, help='GCN or GfNN')
-parser2.add_argument('--train_it', type=str, help='True or False')
-parser2.add_argument('--model_depth', type=int, help='Depth of the of the '
-                                                    'neural network model')
-parser2.add_argument('--output_prefix', type=str,
-                     help='What folder the output is stored in e.g. "/output/" '
-                         'by default')
-parser2.add_argument('--freq_prefix', type=str,
-                     help='What folder the frequency data is stored in e.g. '
-                         '"/freq/" by default')
-parser2.add_argument('--rank', type=int,
-                     help='Helps with multiprocessing, writes to new filename '
-                         'which is "fname_rank", be wary of using this as '
-                         'files normally saved with rank between 1-1000 when '
-                         'multiprocessing')
-parser2.add_argument('--group_size', type=int,
-                     help='How much of each class do you want in function')
-args2 = parser2.parse_args()
 
 
-if args2.model_type is not None:
-    train_it = args2.train_it
-    if train_it not in {'False', 'True'}:
-        raise ValueError('Not a valid boolean string')
-    train_it = train_it == 'True'
-    print(args2)
-
-    wrap_it_all_up_Cite(train_it=train_it, model_type=args2.model_type,
-                        model_depth=args2.model_depth,
-                        output_prefix=args2.output_prefix,
-                        freq_prefix=args2.freq_prefix, rank=args2.rank,
-                        group_size=args2.group_size)
-
-
+# parser2 = argparse.ArgumentParser(
+#     description='Auto running wrap it all up Cite, where it wraps it all up '
+#                 'for the CiteSeer tests and produces our frequency vs '
+#                 'probability plot')
+# parser2.add_argument('--model_type', type=str, help='GCN or GfNN')
+# parser2.add_argument('--train_it', type=str, help='True or False')
+# parser2.add_argument('--model_depth', type=int, help='Depth of the of the '
+#                                                      'neural network model')
+# parser2.add_argument('--output_prefix', type=str,
+#                      help='What folder the output is stored in e.g. "/output/" '
+#                           'by default')
+# parser2.add_argument('--freq_prefix', type=str,
+#                      help='What folder the frequency data is stored in e.g. '
+#                           '"/freq/" by default')
+# parser2.add_argument('--rank', type=int,
+#                      help='Helps with multiprocessing, writes to new filename '
+#                           'which is "fname_rank", be wary of using this as '
+#                           'files normally saved with rank between 1-1000 when '
+#                           'multiprocessing')
+# parser2.add_argument('--group_size', type=int,
+#                      help='How much of each class do you want in function')
+# args2 = parser2.parse_args()
+#
+# if args2.model_type is not None:
+#     train_it = args2.train_it
+#     if train_it not in {'False', 'True'}:
+#         raise ValueError('Not a valid boolean string')
+#     train_it = train_it == 'True'
+#     print(args2)
+#
+#     wrap_it_all_up_Cite(train_it=train_it, model_type=args2.model_type,
+#                         model_depth=args2.model_depth,
+#                         output_prefix=args2.output_prefix,
+#                         freq_prefix=args2.freq_prefix, rank=args2.rank,
+#                         group_size=args2.group_size)
 
 # CODE FOR PRODUCING PROB V PROB PLOT, ENTER INTO FUNCTION
 # unq1, freq1 = count_frequency(fname1, mask=reduced_mask(3), binarised=True)
