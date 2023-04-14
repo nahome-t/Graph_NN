@@ -1,4 +1,5 @@
 # Contains functions used to read and write data
+import argparse
 import os
 from pathlib import Path
 import pandas as pd
@@ -46,12 +47,10 @@ def generate_mask(data_y, mask, num_classes, name, group_size=20):
 
 
 def get_file_name(dataset_name, train_it, model_type, model_depth, rank=None,
-                  prefix=None):
+                  prefix='/output/'):
     # Gets the file name that an output should be saved to given the name of
     # a dataset, whether its trained or not and the model type or depth
 
-    if prefix == None:
-        prefix = '/output/'
 
     extension = f'{prefix}{dataset_name}' \
                 f'_{"trained" if train_it else "random"}_' \
@@ -276,21 +275,22 @@ def reduced_mask(dataset_name, group_size, org_group_size=20):
     return m2[m1]
 
 def bring_together_file(dataset_name, train_it, model_type, model_depth,
-                        prefix=None, del_it=False, save_it=True):
+                        f_prefix, output_prefix, del_it=False, save_it=True,
+                        rank=None):
     # FINISH THIS PART OF THE CODE
     program_path = Path(__file__)
-    if prefix is None:
-        prefix = '/output/'
+    if f_prefix is None:
+        f_prefix = '/output/'
 
-    path_to_output = str(program_path.parent.absolute()) + prefix
+    path_to_output = str(program_path.parent.absolute()) + f_prefix
 
     print(path_to_output)
+    starting_with = f'{dataset_name}_{"trained" if train_it else "random"}_' \
+                    f'{model_type}_{model_depth}'
     # Gets a list of filenames all with the same rank
     file_names = [filename for filename in listdir(path_to_output) if
-             filename.startswith(f'{dataset_name}'
-                                 f'_{"trained" if train_it else "random"}_'
-                                 f'{model_type}_{model_depth}')]
-    print('Ok bringing together')
+             filename.startswith(starting_with)]
+    print(f'Ok bringing together starting with: {starting_with}')
     print(file_names)
 
     files = sorted([path_to_output+f1 for f1 in file_names])
@@ -300,21 +300,22 @@ def bring_together_file(dataset_name, train_it, model_type, model_depth,
             combined_txt += f.read()
     # print(combined_txt)
     # print((len(combined_txt))/240)
-    fname = get_file_name(dataset_name, train_it, model_type, model_depth,
-                          prefix=prefix)
-    print(fname)
+    output_fname = get_file_name(dataset_name, train_it, model_type,
+                                 model_depth,
+                          prefix=output_prefix, rank=rank)
+    print(output_fname)
     print(len(combined_txt)/240)
     # # write the combined text to a new file
     # Add a section here that asks you to confirm before you send it off if
     # it already exists (prevents multiple writes to the same file)
 
-    if exists(fname):
+    if exists(output_fname):
         if input('Enter y if you want to continue, this file already '
                  'exists... ') != 'y':
             return None
 
     if save_it:
-        with open(fname, 'a') as f:
+        with open(output_fname, 'a') as f:
             f.write(combined_txt)
 
     if del_it:
@@ -322,35 +323,79 @@ def bring_together_file(dataset_name, train_it, model_type, model_depth,
             os.remove(file)
 
 
-def wrap_it_all_up_Cite(train_it, model_type, depth, prefix='/bring/'):
+def wrap_it_all_up_Cite(train_it, model_type, model_depth,
+                        output_prefix='/output/',
+                        freq_prefix='/freq/', rank=None, group_size=4):
 
-    fname1 = get_file_name("CiteSeer", train_it, model_type, depth,
-                           prefix=prefix)
-    freq1 = count_frequency(fname1, binarised=True, mask=reduced_mask(
-        'CiteSeer', group_size=4))
+    # Brings together file and outputs it in the same spot as all the outputs
+    bring_together_file('CiteSeer', train_it, model_type, model_depth,
+                        f_prefix=output_prefix, output_prefix=output_prefix, rank=rank)
+    print('ggg')
+    # Gets this file
+    combined_file = get_file_name("CiteSeer", train_it, model_type, model_depth,
+                           prefix=output_prefix, rank=rank)
+    # Counts frequency
+    freq1 = count_frequency(combined_file, binarised=True, mask=reduced_mask(
+        'CiteSeer', group_size=group_size))
+
     np.save(arr=freq1, file=get_file_name("CiteSeer", train_it, model_type,
-                                          depth, rank=2400, prefix='/freq/'))
-
-    # produce_rankVProb_plot(freq1, error=True)
+                                          model_depth, rank=rank, prefix=freq_prefix))
 
 
 
-# wrap_it_all_up_Cite(False, 'GfNN', 2)
-# wrap_it_all_up_Cite(False, 'GfNN', 6)
-#
+
+
+# wrap_it_all_up_Cite(False, 'GfNN', 2, output_prefix='/output5/output/',
+#                     rank=None)
 
 # train_it = False
-# depth = 2
+# depth = 20
 # model = 'GfNN'
+#
 # f1 = get_file_name('CiteSeer', train_it, model, depth, prefix='/freq/',
-#                    rank=2400)
+#                    rank=4800)
 # f2 = get_file_name('CiteSeer_X', train_it, model, depth, prefix='/plots/')
 # freq1 = np.load(f1 + ".npy")
 # produce_rankVProb_plot(freq1, theoretical=True, function_length=24, labels=[
 #     f'{model}, depth: {depth}, function length: 24'], fname=f2)
 #
+# COMPLETE THIS ASAP
+parser = argparse.ArgumentParser(
+    description='Auto running wrap it all up Cite, where it wraps it all up '
+                'for the CiteSeer tests and produces our frequency vs '
+                'probability plot')
+parser.add_argument('--model_type', type=str, help='GCN or GfNN')
+parser.add_argument('--train_it', type=str, help='True or False')
+parser.add_argument('--model_depth', type=int, help='Depth of the of the '
+                                                    'neural network model')
+parser.add_argument('--output_prefix', type=str,
+                    help='What folder the output is stored in e.g. "/output/" '
+                         'by default')
+parser.add_argument('--freq_prefix', type=str,
+                    help='What folder the frequency data is stored in e.g. '
+                         '"/freq/" by default')
+parser.add_argument('--rank', type=int,
+                    help='Helps with multiprocessing, writes to new filename '
+                         'which is "fname_rank", be wary of using this as '
+                         'files normally saved with rank between 1-1000 when '
+                         'multiprocessing')
+parser.add_argument('--group_size', type=int,
+                    help='How much of each class do you want in function')
+args = parser.parse_args()
 
 
+if args.model_type is not None:
+    train_it = args.train_it
+    if train_it not in {'False', 'True'}:
+        raise ValueError('Not a valid boolean string')
+    train_it = train_it == 'True'
+    print(args)
+
+    wrap_it_all_up_Cite(train_it=train_it, model_type=args.model_type,
+                        model_depth=args.model_depth,
+                        output_prefix=args.output_prefix,
+                        freq_prefix=args.freq_prefix, rank=args.rank,
+                        group_size=args.group_size)
 
 
 
