@@ -26,6 +26,7 @@ class GCN(nn.Module):
         for conv in self.convs:
             h = conv(h, edge_index)
             h = F.relu(h)
+
         h = self.out_conv(h, edge_index)
         return F.log_softmax(h, dim=1)
 
@@ -122,3 +123,6 @@ class GfNN(nn.Module):
 
         h = self.out_linear(h)
         return F.log_softmax(h, dim=1)
+
+
+model = GCN(in_features=2, out_features=2, hidden_layer_size=128, depth=2)

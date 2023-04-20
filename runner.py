@@ -9,6 +9,7 @@ from data_handler import is_consistent, generate_mask, get_file_name, \
     write_to_file, applyAdjLayer
 import numpy as np
 
+
 learning_rate = 0.01  # Figure out good value?
 max_epochs = 200  # Model trained to 100% accuracy on training dataset,
 # maximum epochs represents
@@ -86,11 +87,22 @@ def run_simulation(dataset_name, train_it, test_num, model_type, model_depth,
     # Potentially use format cora_trained_GFNN_2 or just use a header!!
 
     start_time = time.time()
+    if dataset_name == "Cora" or dataset_name == "CiteSeer" or dataset_name \
+            == "Pubmed":
+        dataset = Planetoid(root=f'/tmp/{dataset_name}', name=dataset_name)
+        data = dataset[0]
+        num_classes = dataset.num_classes
+        group_size = 20
+    else:
+        # dataset_name, train_it, model_type, model_depth
+        data = torch.load(f=get_file_name(dataset_name=None, train_it=None,
+                                          model_type=None, model_depth=None,
+                                          dir=True) + '/synthetic_torch')
+        group_size = 50
 
-    dataset = Planetoid(root=f'/tmp/{dataset_name}', name=dataset_name)
-    data = dataset[0]
+        num_classes = 2
+
     data = data.to(device)
-    num_classes = dataset.num_classes
 
     # If we have that we want to train GNN easier to pre-compute initial
     # adjacency layers and so
@@ -99,7 +111,7 @@ def run_simulation(dataset_name, train_it, test_num, model_type, model_depth,
 
     # Generates mask, or loads it if it exists within file system,
     generated_mask = generate_mask(data_y=data.y, mask=data.test_mask,
-                                   group_size=20, num_classes=num_classes,
+                                   group_size=group_size, num_classes=num_classes,
                                    name=dataset_name).to(device)
     fname = get_file_name(dataset_name, train_it, model_type,
                           model_depth, rank=rank)
@@ -161,7 +173,7 @@ parser.add_argument('--rank', type=int,
 args = parser.parse_args()
 
 if args.dataset_name is None:
-    run_simulation(dataset_name="CiteSeer", train_it=False, test_num=200000,
+    run_simulation(dataset_name="Synth", train_it=False, test_num=100,
                    model_type='GCN', model_depth=2, rank=25557)
 else:
     # Runs the output of the arguments
