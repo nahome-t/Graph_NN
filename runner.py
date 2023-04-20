@@ -151,7 +151,6 @@ def run_simulation(dataset_name, train_it, test_num, model_type, model_depth,
         f'generate {test_num} '
         f'{"trained" if train_it else "random"} neural networks')
 
-
 # dataset_name, train_it, test_num, model_type, model_depth
 
 parser = argparse.ArgumentParser(
@@ -173,8 +172,8 @@ parser.add_argument('--rank', type=int,
 args = parser.parse_args()
 
 if args.dataset_name is None:
-    run_simulation(dataset_name="Synth", train_it=False, test_num=100,
-                   model_type='GCN', model_depth=2, rank=25557)
+    run_simulation(dataset_name="Synth", train_it=False, test_num=1000,
+                   model_type='GCN', model_depth=2, rank=1)
 else:
     # Runs the output of the arguments
     # Converts train it input from a string into a boolean

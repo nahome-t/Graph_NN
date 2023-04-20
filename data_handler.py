@@ -3,7 +3,7 @@ import argparse
 import os
 from pathlib import Path
 import pandas as pd
-import scipy.optimize
+# import scipy.optimize
 import torch, math
 import numpy as np
 from os.path import exists
@@ -11,8 +11,7 @@ import matplotlib.pyplot as plt
 from models import NormAdj
 from torch_geometric.datasets import Planetoid
 from os import listdir
-import powerlaw
-from scipy.optimize import curve_fit
+# from scipy.optimize import curve_fit
 
 def generate_mask(data_y, mask, num_classes, name, group_size=20):
     # Picks group_size*num_classes examples from the data within the mask
@@ -536,9 +535,9 @@ def count_same_p(dataset_name, model_depth, prefix,
 # produce_probVprob(x, y, fname=fname, s=8)
 
 
-# --------------------------------------------------------------------------- #
-fname = get_file_name('CiteSeer', train_it=False, model_type='GCN', \
-    model_depth=2, prefix='/output_final_hopefully/freq/') + ".npy"
+# # --------------------------------------------------------------------------- #
+# fname = get_file_name('CiteSeer', train_it=False, model_type='GCN', \
+#     model_depth=2, prefix='/output_final_hopefully/freq/') + ".npy"
 
 # fname2 = get_file_name('CiteSeer', train_it=False, model_type='GCN', \
 #     model_depth=6,

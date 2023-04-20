@@ -123,6 +123,3 @@ class GfNN(nn.Module):
 
         h = self.out_linear(h)
         return F.log_softmax(h, dim=1)
-
-
-model = GCN(in_features=2, out_features=2, hidden_layer_size=128, depth=2)
