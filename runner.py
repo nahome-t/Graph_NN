@@ -11,10 +11,9 @@ import numpy as np
 
 
 learning_rate = 0.01  # Figure out good value?
-max_epochs = 200  # Model trained to 100% accuracy on training dataset,
+max_epochs = 300  # Model trained to 100% accuracy on training dataset,
 # maximum epochs represents
 hidden_layer_size = 128
-
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
@@ -38,7 +37,7 @@ def generate_model(GNN_type, depth, num_features, num_classes):
     return model.to(device)
 
 
-def train2_perf(model, data, mask, pr_epoch=False):
+def train2_perf(model, data, mask, pr_epoch=False, threshold=0.95):
     # A slightly altered training method, model is trained to 100% accuracy
     # on training data, this model is then applied to the data with the mask
     # given by one of the parameters (in this case the generated test mask),
@@ -47,7 +46,7 @@ def train2_perf(model, data, mask, pr_epoch=False):
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     model.train()
     for i in range(max_epochs):
-        if is_consistent(model=model, data=data):
+        if is_consistent(model=model, data=data, threshold=threshold):
             # print(f'A model with 100% accuracy was found at epoch {i}')
             with torch.no_grad():
                 if pr_epoch == True:
@@ -95,13 +94,17 @@ def run_simulation(dataset_name, train_it, test_num, model_type, model_depth,
         group_size = 20
     else:
         # dataset_name, train_it, model_type, model_depth
-        data = torch.load(f=get_file_name(dataset_name=None, train_it=None,
+        if train_it:
+            data = torch.load(f=get_file_name(dataset_name=None, train_it=None,
+                                              model_type=None, model_depth=None,
+                                              dir=True) +
+                                '/synthetic_torch_trained')
+        else:
+            data = torch.load(f=get_file_name(dataset_name=None, train_it=None,
                                           model_type=None, model_depth=None,
                                           dir=True) + '/synthetic_torch')
         group_size = 50
-
         num_classes = 2
-
     data = data.to(device)
 
     # If we have that we want to train GNN easier to pre-compute initial
@@ -172,7 +175,7 @@ parser.add_argument('--rank', type=int,
 args = parser.parse_args()
 
 if args.dataset_name is None:
-    run_simulation(dataset_name="Synth", train_it=False, test_num=1000,
+    run_simulation(dataset_name="Synth", train_it=True, test_num=2,
                    model_type='GCN', model_depth=2, rank=1)
 else:
     # Runs the output of the arguments

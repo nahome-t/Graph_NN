@@ -98,7 +98,7 @@ def count_frequency(fname=None, binarised=False,
         return np.sort(cnt)[::-1]
 
 
-def is_consistent(model, data):
+def is_consistent(model, data, threshold=1):
     # Returns true if the model perfectly predicts the training data for a
     # dataset which can be filtered from entire dataset using dataset.mask()[]
     mask = data.train_mask
@@ -106,7 +106,7 @@ def is_consistent(model, data):
     with torch.no_grad():
         prediction = model(data).argmax(dim=1)
         correct = (prediction[mask] == data.y[mask]).sum()
-        if int(correct) == mask.sum():
+        if int(correct)/mask.sum() >= threshold:
             return True
         else:
             return False

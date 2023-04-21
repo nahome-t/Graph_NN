@@ -10,21 +10,24 @@ from synthetic_data import make_data
 # data = dataset[0] # Only one graph in this particular dataset so we just need
 # to load the first element
 
-# data = generate_data(n_points=5000, pos_scale=10, class_var_scale=10,
-#                      train_mask_size=3000, near_neighbours=3)
+
 data = torch.load(f='/Users/nahometewolde/PycharmProjects/Graph_NN'
-                    '/synthetic_torch')
-# data = make_data(1000, test_size=0.1)
+                    '/synthetic_torch_trained')
+
+# data = make_data(n_points=n_points, test_size=test_size, train_size=test_size)
+data = torch.load(f='/Users/nahometewolde/PycharmProjects/Graph_NN'
+                    '/synthetic_torch_trained')
+
 print(f' training: {torch.sum(data.train_mask)}')
 print(f' testing: {torch.sum(data.test_mask)}')
-# torch.save(data, f='/Users/nahometewolde/PycharmProjects/Graph_NN/data')
+print(data)
 learning_rate = 0.01 # Figure out good value?
 
-num_epochs = 150 # Number of epochs over which data will be trained on,
+num_epochs = 300 # Number of epochs over which data will be trained on,
 # should eventually be changed so that it is a variable number which stops
 # once 100% accuracy reached in training data, or we reach some max limit
 
-hidden_layer_size = 64  # Size of hidden convolution layers (all same size)
+hidden_layer_size = 128  # Size of hidden convolution layers (all same size)
 in_features = 2
 out_features = 2
 depth = int(input('Enter the depth of neural network: '))
@@ -47,7 +50,7 @@ data = data.to(device)
 def train(model, data, v2=False):
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     model.train()
-    test_accuracy(model=model, data=data, epoch_num=0, on_training_data=False)
+    test_accuracy(model=model, data=data, epoch_num=0, on_training_data=True)
     for epoch in range(num_epochs):
         optimizer.zero_grad()
         output = model(data)
@@ -57,13 +60,12 @@ def train(model, data, v2=False):
         loss = F.nll_loss(output[data.train_mask], data.y[data.train_mask])
         loss.backward()  # Calculates the gradients
         optimizer.step()  # Updates the model via gradient descent
-        test_accuracy(model, data, epoch+1, on_training_data=False)  # +1
+        test_accuracy(model, data, epoch+1, on_training_data=True)  # +1
         # because epoch should start
         # from 1
     # test_accuracy(model, data, num_epochs)
 
 train(model=model, data=data)
-
 
 # def runner2(n_points, pos_scale, class_var_scale, train_mask_size,
 #             near_neighbours, model_type, model_depth, test_num):
