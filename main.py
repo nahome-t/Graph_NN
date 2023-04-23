@@ -11,10 +11,10 @@ from data_handler import generate_mask
 # to load the first element
 
 
-# data = torch.load(f='Synth')
+data = torch.load(f='synth3')
 
 
-data = make_data(n_points=2000, train_size=120, test_size=120)
+# data = make_data(n_points=1000, train_size=120, test_size=120)
 
 # data = torch.load(f='/Users/nahometewolde/PycharmProjects/Graph_NN'
 #                     '/synthetic_torch_trained')

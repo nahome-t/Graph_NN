@@ -37,7 +37,7 @@ def generate_model(GNN_type, depth, num_features, num_classes):
     return model.to(device)
 
 
-def train2_perf(model, data, mask, pr_epoch=False, threshold=0.95):
+def train2_perf(model, data, mask, pr_epoch=False, threshold=0.94):
     # A slightly altered training method, model is trained to 100% accuracy
     # on training data, this model is then applied to the data with the mask
     # given by one of the parameters (in this case the generated test mask),
@@ -75,7 +75,6 @@ def train2_perf(model, data, mask, pr_epoch=False, threshold=0.95):
 def run_simulation(dataset_name, train_it, test_num, model_type, model_depth,
                    rank=None):
     # runs model multiple times
-
     # dataset_name: in case of cora just 'Cora'
     # train_it: True/False whether we want to train neural network before
     # applying it to dataset
@@ -97,12 +96,12 @@ def run_simulation(dataset_name, train_it, test_num, model_type, model_depth,
         if train_it:
             fname = get_file_name(dataset_name=None, train_it=None,
                                   model_type=None, model_depth=None,
-                                  dir=True) + '/Synth2'
+                                  dir=True) + '/synth3'
             data = torch.load(f=fname)
         else:
             fname = get_file_name(dataset_name=None, train_it=None,
                                   model_type=None, model_depth=None,
-                                  dir=True) + '/Synth2'
+                                  dir=True) + '/synth3'
             data = torch.load(f=fname)
         group_size = 60
         num_classes = 2
@@ -176,8 +175,8 @@ parser.add_argument('--rank', type=int,
 args = parser.parse_args()
 
 if args.dataset_name is None:
-    run_simulation(dataset_name="Synth", train_it=False, test_num=30,
-                   model_type='GCN', model_depth=2, rank=1)
+    run_simulation(dataset_name="Synth", train_it=True, test_num=10,
+                   model_type='GCN', model_depth=6, rank=1)
 else:
     # Runs the output of the arguments
     # Converts train it input from a string into a boolean
