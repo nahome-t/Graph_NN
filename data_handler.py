@@ -7,18 +7,23 @@ import pandas as pd
 import torch, math
 import numpy as np
 from os.path import exists
+import matplotlib as mpl
 import matplotlib.pyplot as plt
+from matplotlib.colors import LinearSegmentedColormap
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+
 from models import NormAdj
 from torch_geometric.datasets import Planetoid
 from os import listdir
 # from scipy.optimize import curve_fit
 
-def generate_mask(data_y, mask, num_classes, name, group_size=20):
+def generate_mask(data_y, mask, num_classes, name, group_size=20, reader=False):
     # Picks group_size*num_classes examples from the data within the mask
     # given such that such tha each class is appears group_size times (
     # assuming it can find that many)
 
-    if exists(f'benchmark_mask:{name}_{group_size}_{num_classes}.npy'):
+    if exists(f'benchmark_mask:{name}_{group_size}_{num_classes}.npy') and \
+            reader==False:
         print('Loading, benchmark mask, already exists...')
         return torch.from_numpy(np.load(f'benchmark_mask:{name}_'
                                         f'{group_size}_{num_classes}.npy'))
@@ -41,8 +46,16 @@ def generate_mask(data_y, mask, num_classes, name, group_size=20):
         if mask[i] and freq[x] < group_size:
             freq[x] += 1
             test_mask[i] = True
+    print(freq)
+    if all([freq[x] == group_size-1 for x in freq]):
+        print('Alls good')
 
-    np.save(file=f'benchmark_mask:{name}_{group_size}_{num_classes}.npy',
+    else:
+        TypeError("Won't be the same for each function")
+
+    if reader == False:
+
+        np.save(file=f'benchmark_mask:{name}_{group_size}_{num_classes}.npy',
             arr=np.array(test_mask))
     return torch.tensor(test_mask)
 
@@ -194,7 +207,7 @@ def produce_rankVProb_plot(*arrays, labels=None,
                            error=False,
                            theoretical=False, function_length=None,
                            fname=None,
-                           extra=None):
+                           extra=None, c=30):
 
     arrays = list(arrays)
 
@@ -203,14 +216,14 @@ def produce_rankVProb_plot(*arrays, labels=None,
 
         test_size[i] = np.sum(arrays[i])
         arrays[i] = 1 / np.sum(arrays[i]) * arrays[i]  # Normalises array
-    arrays.append(extra)
+    if extra is not None:
+        arrays.append(extra)
 
     fig = plt.figure()
     ax = fig.add_subplot()
     ax.set_box_aspect(1)
     ax.set_xlim([1, 1e8])
     ax.set_ylim([1e-8, 1])
-
 
     for i in range(len(arrays)):
         # Makes sure all the arrays are the same length
@@ -234,8 +247,7 @@ def produce_rankVProb_plot(*arrays, labels=None,
         if theoretical:
             if function_length == None:
                 raise TypeError("Function length isn't specified...")
-            c = 30
-            x_fit, y_fit = theoretical_val(func_len=function_length,
+            x_fit, y_fit = theoretical_val(func_len=function_length[i],
                                            output_len=len(
                                                arrays[i]),
                                            p_vio=arrays[i][:c].sum(),
@@ -243,7 +255,7 @@ def produce_rankVProb_plot(*arrays, labels=None,
             plt.plot(x_fit, y_fit, linestyle='dotted', color=p[0].get_color())
 
             print(f'Violating probabilities '
-                  f'{arrays[i][:2]}, {arrays[i][:2].sum()}')
+                  f'{arrays[i][:c]}, {arrays[i][:c].sum()}')
 
         plt.xlabel('Rank')
         plt.ylabel('Probability')
@@ -254,7 +266,6 @@ def produce_rankVProb_plot(*arrays, labels=None,
     if fname:
         fig.set_size_inches(3, 3)
         plt.savefig(fname, bbox_inches='tight', dpi=300)
-
     plt.show()
 
 
@@ -270,16 +281,19 @@ def permutational_order(arr):
     return arr
 
 
-def reduced_mask(dataset_name, group_size, org_group_size=20):
+def reduced_mask(dataset_name, group_size, org_group_size=20, data=None):
     # This produces a mask that takes in a function which has size of
     # org_group_size*num_classes and reduces it so that its now
     # group_size*num_classes, i.e. just reduces size of function so that in
     # our new function it has a certain amount of each function
-    dataset = Planetoid(root=f'/tmp/{dataset_name}', name=dataset_name)
-    print('Getting reduced mask :)')
-    data = dataset[0]
-    num_classes = dataset.num_classes
-    # # This is the mask with 20 lots of each class which is the original amount
+    if data is None:
+        dataset = Planetoid(root=f'/tmp/{dataset_name}', name=dataset_name)
+        print('Getting reduced mask :)')
+        data = dataset[0]
+        num_classes = dataset.num_classes
+    else:
+        num_classes = 2
+    # This is the mask with 20 lots of each class which is the original amount
     m1 = generate_mask(data_y=data.y, group_size=org_group_size,
                        num_classes=num_classes,
                        mask=data.train_mask, name=dataset_name).numpy()
@@ -427,24 +441,47 @@ def wrap_it_all_up_Cite(train_it, model_type, model_depth,
 #                         freq_prefix=args2.freq_prefix, rank=args2.rank,
 #                         group_size=args2.group_size)
 
-def produce_probVprob(x, y, fname=None, log_scale=True, title=None,
+def produce_probVprob(x, y, unq, true_data, fname=None, log_scale=True,
+                      title=None,
                       label=None, s=None):
-    # Produces probablility vs prbability plot for same model but comparing
+    # Produces probability vs probability plot for same model but comparing
     # trained and untrained
+    print('I HAVE NOW ENTERED A BINARISED BASED FEATURE')
 
-    _, ax = plt.subplots()
+    fig, ax = plt.subplots()
     ax.set_box_aspect(1)
+    cmap = LinearSegmentedColormap.from_list("",
+                                             ["red", "orange", "gold",
+                                                               "green"])
+    power = 1
+    _f = lambda x: np.power(x, power)
+    _b = lambda x: np.power(x, 1/power)
+    norm = mpl.colors.FuncNorm((_f, _b), vmin=0.45, vmax=1)
 
     plt.xlim([10 ** (-5.5), 1])
     plt.ylim([10 ** (-5.5), 1])
+    if unq is not None:
+        acc = torch.zeros(unq.shape[0])
+        for i in range(len(acc)):
+            acc[i] = (unq[i] == true_data%2).sum()/int(true_data.size(dim=0))
+
+    else:
+        acc=None
+
     if label:
-        plt.scatter(x, y, label="lol")
+        im = plt.scatter(x, y, label="lol", c=acc, s=s, cmap=cmap, norm=norm)
         plt.legend()
     else:
         if s is not None:
-            plt.scatter(x, y, s=s)
-        else:
-            plt.scatter(x, y)
+            im = plt.scatter(x, y, s=s, c=acc, cmap=cmap, norm=norm)
+    if unq is not None:
+        # divider = make_axes_locatable(ax)
+        # cax = divider.append_axes("right", size="5%", pad=0.05)
+
+        # norm = mpl.colors.Normalize(vmin=0.45, vmax=1)
+        cbar = fig.colorbar(im, ax=ax, shrink=0.9)
+        cbar.ax.set_ylabel('Model accuracy on benchmark data')
+        ax.get_legend().remove()
 
     if title is not None:
         plt.title(title)
@@ -460,8 +497,18 @@ def produce_probVprob(x, y, fname=None, log_scale=True, title=None,
     # ax.set_ylim([10**(-5), 1])
 
     if fname:
+        fig.set_size_inches(3, 3)
         plt.savefig(fname, bbox_inches='tight', dpi=300)
     plt.show()
+
+    #
+    # norm = colors.BoundaryNorm(np.arange(0,maxerr+1,1), cmap.N)
+    # sp = ax.scatter(df['x'], df['y'], c=df['Error'], cmap=cmap, norm=norm, edgecolor='none')
+
+    #
+    # #plt.colorbar(im, cax=cax)
+    #
+    # cbar.set_label(f'Error (of {number_of_test_examples})')
 
 
 def count_same_p(dataset_name, model_depth, prefix,
@@ -499,7 +546,9 @@ def count_same_p(dataset_name, model_depth, prefix,
 
     df['c_x'] = [i if not math.isnan(i) else 1 / total1 for i in df['c_x']]
     df['c_y'] = [i if not math.isnan(i) else 1 / total2 for i in df['c_y']]
-
+    print(df)
+    # Converts list of functions to list of strings
+    unq = torch.tensor([[int(x) for x in s] for s in df['f']])
     res = np.array([df['c_x'], df['c_y']])
 
     # if freq_prefix:
@@ -507,32 +556,89 @@ def count_same_p(dataset_name, model_depth, prefix,
     #                           model_type='both',
     #                                       model_depth=model_depth, rank=group_size,
     #                                       prefix=freq_prefix), res)
-    return res
 
 
-# output_prefix = '/output_final/'
-# dataset_name = 'CiteSeer'
-# model_depth = 6
+    return res, unq
+
+output_prefix = '/output_final/'
+dataset_name = 'CiteSeer'
+model_depth = 6
+group_size = 4
+freq_prefix = '/output_final/freq/'
+train_it = False
+model_type = 'GfNN'
+
+
+#============================================================================#
+# def save_freq(model_type, model_depth, group_size):
+#     fname1 = get_file_name('CiteSeer', train_it, model_type, model_depth,
+#                            prefix=output_prefix)
+#
+#     f0 = count_frequency(fname1, binarised=True, special=5*10**5,
+#                          mask=reduced_mask('CiteSeer', group_size=group_size))
+#
+#     f_output = get_file_name('CiteSeer', train_it=train_it,
+#                              model_type=model_type,
+#                              model_depth=model_depth, rank=group_size,
+#                              prefix='/output_final_hopefully/freq/')
+#     np.save(file=f_output, arr=f0)
 # group_size = 6
-# freq_prefix = '/freq/'
+# save_freq('GfNN', 6, group_size)
+# save_freq('GCN', 6, group_size)
+# save_freq('GfNN', 2, group_size)
+# save_freq('GCN', 2, group_size)
+#---------------------------------------------------------------------------#
+# Code for producing final form of plots
+model_depth=2
 
-# fname1 = get_file_name(dataset_name, True, 'GCN', model_depth,
-#                        prefix=output_prefix)
-# f1 = count_frequency(fname1, binarised=True, mask=reduced_mask('CiteSeer', 4))
-# produce_rankVProb_plot(f1)
-
+# f1 = get_file_name('CiteSeer', train_it=False,
+#                             model_type='GCN',
+#                             model_depth=model_depth,
+#                             prefix='/output_final_hopefully/freq/', rank=group_size)
+# f2 = get_file_name('CiteSeer', train_it=False,
+#                             model_type='GfNN',
+#                             model_depth=model_depth,
+#                             prefix='/output_final_hopefully/freq/', rank=group_size)
+#
+# freq1 = np.load(f1+".npy")
+# freq2 = np.load(f2+".npy")
+#
+#
+# # f3 = count_frequency(fname=)
+# basis = f'GCN, depth {model_depth}, function length: {group_size*6}'
+# basis2 = f'GfNN, depth {model_depth}, function length: {group_size*6}'
+#
+# produce_rankVProb_plot(freq1, freq2,
+#                        labels=[basis, basis2],
+#                        theoretical=True, function_length=[group_size*6,
+#                                                           group_size*6],
+#                        c=40)
+#
 # print(get_file_name(dataset_name, train_it='both',
 #                               model_type=model_type,
 #                                           model_depth=model_depth, rank=4,
 #                                           prefix='/freq/'))
 
-# z = count_same_p('CiteSeer', model_depth, output_prefix, group_size=group_size,
-#                   freq_prefix=freq_prefix)
+
+#-------------------------------------------------------------------------#
+# z, unq = count_same_p('CiteSeer', model_depth, output_prefix,
+#                    group_size=group_size)
 # fname = get_file_name('CiteSeer', True, 'both', model_depth, prefix='/plots/')
+#
+# dataset = Planetoid(root=f'/tmp/{dataset_name}', name=dataset_name)
+# data = dataset[0]
+# # mask = generate_mask(data_y=data.y, )
 # print(fname)
 # print(z.shape)
 # x, y = z
-# produce_probVprob(x, y, fname=fname, s=8)
+# true_data = data.y[generate_mask(data_y=data.y, num_classes=6,
+#                                  name='CiteSeer', group_size=20,
+#                                  mask=data.test_mask)][
+#     reduced_mask('CiteSeer', group_size)]
+#
+# produce_probVprob(x, y, fname=fname, s=8, unq=unq, true_data=true_data,
+#                   label=['hey'])
+
 
 
 # # --------------------------------------------------------------------------- #
@@ -563,9 +669,8 @@ def count_same_p(dataset_name, model_depth, prefix,
 #     output = C/(np.power(x, alpha))
 #     return output
 
-
 # -----------------------------------------------------------------------#
-# code for fitt
+# code for fit
 # # bounds = ([0.5, 10**-3], [0.95, 10**-1])
 # bounds = ([0.5], [0.95])
 # popt, pcov = curve_fit(model, xdata=np.arange(r_min, len(freq1)),
@@ -574,3 +679,20 @@ def count_same_p(dataset_name, model_depth, prefix,
 # print(popt)
 # rank = np.arange(1, len(freq1) +1)
 # produce_rankVProb_plot(freq1, extra=model(rank, popt[0]))
+
+# count_same_p('CiteSeer', model_depth=2,
+#              prefix='/output_final/', group_size=4)
+# bring_together_file('Synth', False, 'GCN', 6, '/synth_output/output/',
+#                     '/output_final/', save_it=True)
+
+# Synth random GCN 2 7.8M
+# Synth random GfNN 2 7.8M
+# data = torch.load('synthetic_torch')
+# print(data)
+# group_size=20
+# fname1 = get_file_name('Synth', train_it=False, model_type='GCN',
+#                        model_depth=6, prefix='/output_final/')
+# f0 = count_frequency(fname1, special=5*10**5,
+#                          mask=reduced_mask('Synth', group_size=group_size,
+#                                            org_group_size=50, data=data))
+

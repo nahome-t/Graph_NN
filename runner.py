@@ -11,7 +11,7 @@ import numpy as np
 
 
 learning_rate = 0.01  # Figure out good value?
-max_epochs = 300  # Model trained to 100% accuracy on training dataset,
+max_epochs = 150  # Model trained to 100% accuracy on training dataset,
 # maximum epochs represents
 hidden_layer_size = 128
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -95,15 +95,16 @@ def run_simulation(dataset_name, train_it, test_num, model_type, model_depth,
     else:
         # dataset_name, train_it, model_type, model_depth
         if train_it:
-            data = torch.load(f=get_file_name(dataset_name=None, train_it=None,
-                                              model_type=None, model_depth=None,
-                                              dir=True) +
-                                '/synthetic_torch_trained')
+            fname = get_file_name(dataset_name=None, train_it=None,
+                                  model_type=None, model_depth=None,
+                                  dir=True) + '/Synth2'
+            data = torch.load(f=fname)
         else:
-            data = torch.load(f=get_file_name(dataset_name=None, train_it=None,
-                                          model_type=None, model_depth=None,
-                                          dir=True) + '/synthetic_torch')
-        group_size = 50
+            fname = get_file_name(dataset_name=None, train_it=None,
+                                  model_type=None, model_depth=None,
+                                  dir=True) + '/Synth2'
+            data = torch.load(f=fname)
+        group_size = 60
         num_classes = 2
     data = data.to(device)
 
@@ -118,7 +119,7 @@ def run_simulation(dataset_name, train_it, test_num, model_type, model_depth,
                                    name=dataset_name).to(device)
     fname = get_file_name(dataset_name, train_it, model_type,
                           model_depth, rank=rank)
-
+    print(fname)
     # Creates file if it doesn't exist
     if not exists(fname):
         open(fname, "x")
@@ -175,7 +176,7 @@ parser.add_argument('--rank', type=int,
 args = parser.parse_args()
 
 if args.dataset_name is None:
-    run_simulation(dataset_name="Synth", train_it=True, test_num=2,
+    run_simulation(dataset_name="Synth", train_it=False, test_num=30,
                    model_type='GCN', model_depth=2, rank=1)
 else:
     # Runs the output of the arguments
