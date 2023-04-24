@@ -1,6 +1,40 @@
+import numpy as np
+
 import data_handler
 
-def produce_final_rankVprob():
+def produce_final_rankVprob(*args, dataset_name, freq_prefix, num_classes, plots_prefix=None):
+
+    # Depth function length and group_size are parameters
+    # Takes in a series of tuples representing what we want to plot e.g. (
+    # 'GCN', 2, 24)
+    args = list(args)
+    freq = []
+
+
+    labels = [""] * len(args)
+    func_lens = [0]*len(args)
+
+    for i, x in enumerate(args):
+        model_type, model_depth, group_size = x
+        f1 = data_handler.get_file_name(dataset_name, False, model_type,
+                                        model_depth, prefix=freq_prefix,
+                                        rank=group_size)
+        freq.append(np.load(f1+".npy"))
+        labels[i] = f'{model_type}, depth: {model_depth}, ' \
+                    f'function length {group_size * num_classes}'
+        func_lens[i] = group_size * num_classes
+
+    data_handler.produce_rankVProb_plot(*freq, labels=labels,
+                                        function_length=func_lens,
+                                        fname=plots_prefix, theoretical=True)
+
+
+produce_final_rankVprob(('GCN', 2, 4), ('GFNN', 2, 4),
+                        dataset_name='CiteSeer',
+                        freq_prefix='/output_final_hopefully/freq/',
+                        num_classes=6)
+
+
     # Code for producing final form of plots
     # model_depth=6
     # group_size=120
@@ -33,11 +67,12 @@ def produce_final_rankVprob():
     #                                           prefix='/freq/'))
 
 
-    return None
 
 
 
-def produce_final_probVprob():
+def produce_final_probVprob(model_type, model_depth, group_size=4, ):
+
+
     # Code for how i ran it once
     # group_size = 4
     # dataset_name = 'CiteSeer'

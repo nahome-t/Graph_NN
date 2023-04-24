@@ -7,7 +7,6 @@ from synthetic_data import make_synth_data
 from data_handler import generate_mask
 
 
-
 dataset_name = input('Enter dataset name: ')
 data = torch.load(f=dataset_name)
 
