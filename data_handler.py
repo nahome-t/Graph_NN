@@ -9,7 +9,6 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 from scipy.optimize import curve_fit
 from models import NormAdj
-
 from os import listdir
 # from scipy.optimize import curve_fit
 
@@ -58,7 +57,7 @@ def generate_mask(data_y, mask, num_classes, name, group_size=20, reader=False):
 def get_file_name(dataset_name, train_it, model_type, model_depth, rank=None,
                   prefix='/output/', dir=False):
     # Gets the file name that an output should be saved to given the name of
-    # a dataset, whether its trained or not and the model type or depth
+    # a dataset, whether it's trained or not and the model type or depth
 
     extension = f'{prefix}{dataset_name}' \
                 f'_{"trained" if train_it else "random"}_' \

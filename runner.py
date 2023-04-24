@@ -37,7 +37,7 @@ def generate_model(GNN_type, depth, num_features, num_classes):
     return model.to(device)
 
 
-def train2_perf(model, data, mask, pr_epoch=False, threshold=0.94):
+def train2_perf(model, data, mask, pr_epoch=False, threshold=1):
     # A slightly altered training method, model is trained to 100% accuracy
     # on training data, this model is then applied to the data with the mask
     # given by one of the parameters (in this case the generated test mask),
@@ -84,16 +84,21 @@ def run_simulation(dataset_name, train_it, test_num, model_type, model_depth,
     # model_depth: depth of neural network
     # Potentially use format cora_trained_GFNN_2 or just use a header!!
 
-    start_time = time.time()
 
     data = torch.load(f=dataset_name)
     data = data.to(device)
+    # Used because low dimensionality of Synth dataset makes it harder to
+    # reach 100% accuracy on training dataset, so we instead train to 94%
+    # accuracy (as high as it can consistently go)
+    if dataset_name == 'Synth':
+        threshold = 0.94
+    else:
+        threshold = 1
 
     # If we have that we want to train GNN easier to pre-compute initial
     # adjacency layers and so
     data_used = applyAdjLayer(data, model_depth) \
         if model_type == "GfNN" else data
-
 
     fname = get_file_name(dataset_name, train_it, model_type,
                           model_depth, rank=rank)
@@ -102,7 +107,7 @@ def run_simulation(dataset_name, train_it, test_num, model_type, model_depth,
     if not exists(fname):
         open(fname, "x")
     k = 0
-
+    start_time = time.time()
     while k < test_num:
         model = generate_model(GNN_type=model_type, depth=model_depth,
                                num_classes=data.num_classes,
@@ -112,10 +117,9 @@ def run_simulation(dataset_name, train_it, test_num, model_type, model_depth,
         printer = (k + 1) % 1000 == 0
         if train_it:
             arr = train2_perf(model, data_used, data.test_mask,
-                              pr_epoch=printer)
+                              pr_epoch=printer, threshold=threshold)
         else:
             arr = model(data_used)[data.test_mask].argmax(dim=1)
-        # print(arr)
         if printer:
             print(f'Done {k + 1}/{test_num}, dataset_name: {dataset_name}, '
                   f'model type: {model_type}, model depth: {model_depth}, '
@@ -153,7 +157,7 @@ parser.add_argument('--rank', type=int,
 args = parser.parse_args()
 
 if args.dataset_name is None:
-    run_simulation(dataset_name="Synth", train_it=True, test_num=10,
+    run_simulation(dataset_name="CiteSeer", train_it=True, test_num=20,
                    model_type='GCN', model_depth=6, rank=1)
 else:
     # Runs the output of the arguments

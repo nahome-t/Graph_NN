@@ -8,26 +8,27 @@ from data_handler import generate_mask
 
 
 
-dataset_name = torch.load(input('Enter dataset name: '))
+dataset_name = input('Enter dataset name: ')
 data = torch.load(f=dataset_name)
 
 
-
 print(f' training: {torch.sum(data.train_mask)}, of which '
-      f'{data.y[data.train_mask].sum()} belong to one of the classse')
-print(f' testing: {torch.sum(data.test_mask)} of which '
-      f'{data.y[data.test_mask].sum()} belongs to one of the classes')
+      f'{np.unique(data.y[data.train_mask].numpy(), return_counts=True)} '
+      f'is the class distribution')
+print(f' testing: {torch.sum(data.test_mask)}, of which '
+      f'{np.unique(data.y[data.test_mask].numpy(), return_counts=True)} '
+      f'is the class distribution')
 
 print(data)
-learning_rate = 0.005 # Figure out good value?
+learning_rate = 0.01 # Figure out good value?
 
 num_epochs = 300 # Number of epochs over which data will be trained on,
 # should eventually be changed so that it is a variable number which stops
 # once 100% accuracy reached in training data, or we reach some max limit
 
 hidden_layer_size = 128  # Size of hidden convolution layers (all same size)
-in_features = 2
-out_features = 2
+in_features = data.num_features
+out_features = data.num_classes
 depth = int(input('Enter the depth of neural network: '))
 
 if input('GfNN or GCN: ') == 'GCN':
@@ -65,7 +66,6 @@ def train(model, data, v2=False):
 
 train(model=model, data=data)
 
-torch.save(data, f='Synth2')
 # def runner2(n_points, pos_scale, class_var_scale, train_mask_size,
 #             near_neighbours, model_type, model_depth, test_num):
 #
