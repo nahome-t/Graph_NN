@@ -19,7 +19,7 @@ def generate_mask(data_y, mask, num_classes, name, group_size=20, reader=False):
     # assuming it can find that many)
 
     if exists(f'benchmark_mask:{name}_{group_size}_{num_classes}.npy') and \
-            reader==False:
+            reader == False:
         print('Loading, benchmark mask, already exists...')
         return torch.from_numpy(np.load(f'benchmark_mask:{name}_'
                                         f'{group_size}_{num_classes}.npy'))
@@ -43,16 +43,15 @@ def generate_mask(data_y, mask, num_classes, name, group_size=20, reader=False):
             freq[x] += 1
             test_mask[i] = True
     print(freq)
-    if all([freq[x] == group_size-1 for x in freq]):
+    if all([freq[x] == group_size - 1 for x in freq]):
         print('Alls good')
 
     else:
         TypeError("Won't be the same for each function")
 
     if reader == False:
-
         np.save(file=f'benchmark_mask:{name}_{group_size}_{num_classes}.npy',
-            arr=np.array(test_mask))
+                arr=np.array(test_mask))
     return torch.tensor(test_mask)
 
 
@@ -114,7 +113,7 @@ def is_consistent(model, data, threshold=1):
     with torch.no_grad():
         prediction = model(data).argmax(dim=1)
         correct = (prediction[mask] == data.y[mask]).sum()
-        if int(correct)/mask.sum() >= threshold:
+        if int(correct) / mask.sum() >= threshold:
             return True
         else:
             return False
@@ -180,18 +179,18 @@ def calc_row_err(probability, test_size, depth=10, z=1):
 
 
 def theoretical_zipf(func_len, output_len, cut_off_rank=1, p_vio=0, classes=2,
-                    alpha=1):
-
+                     alpha=1):
     # This is the rank or the x-axis
     x = np.arange(1, output_len + 1)
     if alpha == 1:
-        C = (1 - p_vio) / (func_len * math.log(classes) - math.log(cut_off_rank))
+        C = (1 - p_vio) / (
+                    func_len * math.log(classes) - math.log(cut_off_rank))
         y = C / x
 
     else:
-        a = 1-alpha
-        C = a*(1-p_vio)/(2**(func_len*a) - cut_off_rank**(a))
-        y = C/(np.power(x, alpha))
+        a = 1 - alpha
+        C = a * (1 - p_vio) / (2 ** (func_len * a) - cut_off_rank ** (a))
+        y = C / (np.power(x, alpha))
 
     return x, y
 
@@ -203,11 +202,9 @@ def produce_rankVProb_plot(*arrays, labels=None,
                            theoretical=False, function_length=None,
                            fname=None,
                            extra=None, c=30):
-
     arrays = list(arrays)
     test_size = np.zeros(len(arrays))
     for i in range(len(arrays)):
-
         test_size[i] = np.sum(arrays[i])
         arrays[i] = 1 / np.sum(arrays[i]) * arrays[i]  # Normalises array
     if extra is not None:
@@ -273,6 +270,7 @@ def permutational_order(arr):
         arr[i] = np.array([val_map[val] for val in arr[i]])
     return arr
 
+
 def reduced_mask(dataset_name, group_size, data=None,
                  num_classes=None):
     # This produces a mask that reduces the size of the test mask into a new
@@ -337,9 +335,10 @@ def bring_together_file(dataset_name, train_it, model_type, model_depth,
         for file in files:
             os.remove(file)
 
+
 def wrap_it_all_up(dataset_name, train_it, model_type, model_depth,
-                        output_prefix, freq_prefix, group_size,
-                        org_group_size, data):
+                   output_prefix, freq_prefix, group_size,
+                   org_group_size, data):
     if output_prefix is None:
         output_prefix = '/output/'
 
@@ -354,7 +353,8 @@ def wrap_it_all_up(dataset_name, train_it, model_type, model_depth,
                         f_prefix=output_prefix, output_prefix=output_prefix)
     print('ggg')
     # Gets this file
-    combined_file = get_file_name(dataset_name, train_it, model_type, model_depth,
+    combined_file = get_file_name(dataset_name, train_it, model_type,
+                                  model_depth,
                                   prefix=output_prefix)
     # Counts frequency
     freq1 = count_frequency(combined_file, binarised=True, mask=reduced_mask(
@@ -387,7 +387,6 @@ def wrap_it_all_up(dataset_name, train_it, model_type, model_depth,
 # f2 = get_file_name('CiteSeer_OFF', train_it, model, depth, prefix='/plots/')
 # produce_rankVProb_plot(freq1, theoretical=True, function_length=24, labels=[
 #     f'{model}, depth: {depth}, function length: 24'])
-
 
 
 # parser2 = argparse.ArgumentParser(
@@ -429,7 +428,7 @@ def wrap_it_all_up(dataset_name, train_it, model_type, model_depth,
 def produce_probVprob(x, y, unq, true_data, fname=None,
                       title=None, label=None, s=None, theoretical=False,
                       binarised=False):
-    alpha=1
+    alpha = 1
     # Produces probability vs probability plot for same model but comparing
     # trained and untrained
 
@@ -437,7 +436,7 @@ def produce_probVprob(x, y, unq, true_data, fname=None,
     ax.set_box_aspect(1)
     cmap = LinearSegmentedColormap.from_list("",
                                              ["red", "orange", "gold",
-                                                               "green"])
+                                              "green"])
     # If we want to scale our axis use this code and come up with scaling
     # funcion
     # power = 1
@@ -445,7 +444,7 @@ def produce_probVprob(x, y, unq, true_data, fname=None,
     # _b = lambda x: np.log(x/(1-x))
     # norm = mpl.colors.FuncNorm((_f, _b), vmin=0.45, vmax=1)
 
-    norm=None
+    norm = None
     ranges = [10 ** (-5.5), 1]
     plt.xlim(ranges)
     plt.ylim(ranges)
@@ -454,14 +453,14 @@ def produce_probVprob(x, y, unq, true_data, fname=None,
         plt.plot(ranges, ranges, linestyle='--')
 
     if binarised:
-        true_data = true_data%2
+        true_data = true_data % 2
 
     if unq is not None:
         acc = torch.zeros(unq.shape[0])
         for i in range(len(acc)):
-            acc[i] = (unq[i] == true_data).sum()/int(true_data.size(dim=0))
+            acc[i] = (unq[i] == true_data).sum() / int(true_data.size(dim=0))
     else:
-        acc=None
+        acc = None
 
     if label:
         im = plt.scatter(x, y, label="lol", c=acc, s=s, cmap=cmap, norm=norm,
@@ -492,7 +491,7 @@ def produce_probVprob(x, y, unq, true_data, fname=None,
     plt.show()
 
 
-def count_same_p(dataset_name, model_depth, prefix, mask, freq_prefix=None,):
+def count_same_p(dataset_name, model_depth, prefix, mask, freq_prefix=None ):
     if freq_prefix is None:
         print('you havent written frequnency prefix, this wont get saved')
     fname1 = get_file_name(dataset_name, True, 'GCN', model_depth,
@@ -536,35 +535,32 @@ def count_same_p(dataset_name, model_depth, prefix, mask, freq_prefix=None,):
     #                                       model_depth=model_depth, rank=group_size,
     #                                       prefix=freq_prefix), res)
 
-
     return res, unq
 
 
 def fit_zipf(func_len, output_len, r_min, freq):
-
     # Bounds the outputted value to the following
     bounds = ([0.5], [0.99])
     n_trials = freq.sum()
-    p = freq/n_trials
+    p = freq / n_trials
 
     # FINISH THIS
     p_vio = p[:r_min].sum()
 
     x_data = np.arange(r_min, len(freq))
     y_data = p[r_min:]
-    uncertainty = np.sqrt(p*(1-p)/n_trials)
+    uncertainty = np.sqrt(p * (1 - p) / n_trials)
 
     def model(alpha):
         _, y = theoretical_zipf(func_len, output_len, r_min, p_vio,
                                 classes=2)
         return y
 
-
     popt, pcov = curve_fit(model, xdata=x_data,
                            ydata=y_data, bounds=bounds, sigma=uncertainty)
     print(np.sqrt(pcov))
     print(popt)
-    rank = np.arange(1, len(freq) +1)
+    rank = np.arange(1, len(freq) + 1)
     produce_rankVProb_plot(p, extra=model(rank, popt[0]))
 
     count_same_p('CiteSeer', model_depth=2,
@@ -580,10 +576,7 @@ freq_prefix = '/output_final/freq/'
 train_it = False
 model_type = 'GfNN'
 
-
-#============================================================================#
-
-
+# ============================================================================#
 
 # count_Synth('GCN', 6)
 # count_Synth('GfNN', 6)

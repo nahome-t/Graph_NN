@@ -85,26 +85,8 @@ def run_simulation(dataset_name, train_it, test_num, model_type, model_depth,
     # Potentially use format cora_trained_GFNN_2 or just use a header!!
 
     start_time = time.time()
-    if dataset_name == "Cora" or dataset_name == "CiteSeer" or dataset_name \
-            == "Pubmed":
-        dataset = Planetoid(root=f'/tmp/{dataset_name}', name=dataset_name)
-        data = dataset[0]
-        num_classes = dataset.num_classes
-        group_size = 20
-    else:
-        # dataset_name, train_it, model_type, model_depth
-        if train_it:
-            fname = get_file_name(dataset_name=None, train_it=None,
-                                  model_type=None, model_depth=None,
-                                  dir=True) + '/synth3'
-            data = torch.load(f=fname)
-        else:
-            fname = get_file_name(dataset_name=None, train_it=None,
-                                  model_type=None, model_depth=None,
-                                  dir=True) + '/synth3'
-            data = torch.load(f=fname)
-        group_size = 60
-        num_classes = 2
+
+    data = torch.load(f=dataset_name)
     data = data.to(device)
 
     # If we have that we want to train GNN easier to pre-compute initial
@@ -112,10 +94,7 @@ def run_simulation(dataset_name, train_it, test_num, model_type, model_depth,
     data_used = applyAdjLayer(data, model_depth) \
         if model_type == "GfNN" else data
 
-    # Generates mask, or loads it if it exists within file system,
-    generated_mask = generate_mask(data_y=data.y, mask=data.test_mask,
-                                   group_size=group_size, num_classes=num_classes,
-                                   name=dataset_name).to(device)
+
     fname = get_file_name(dataset_name, train_it, model_type,
                           model_depth, rank=rank)
     print(fname)
@@ -126,16 +105,16 @@ def run_simulation(dataset_name, train_it, test_num, model_type, model_depth,
 
     while k < test_num:
         model = generate_model(GNN_type=model_type, depth=model_depth,
-                               num_classes=num_classes,
+                               num_classes=data.num_classes,
                                num_features=data.num_features)
         # If we want our test to train neural network it'll train it,
         # otherwise it'll just apply our model to data
         printer = (k + 1) % 1000 == 0
         if train_it:
-            arr = train2_perf(model, data_used, generated_mask,
+            arr = train2_perf(model, data_used, data.test_mask,
                               pr_epoch=printer)
         else:
-            arr = model(data_used)[generated_mask].argmax(dim=1)
+            arr = model(data_used)[data.test_mask].argmax(dim=1)
         # print(arr)
         if printer:
             print(f'Done {k + 1}/{test_num}, dataset_name: {dataset_name}, '
@@ -154,7 +133,6 @@ def run_simulation(dataset_name, train_it, test_num, model_type, model_depth,
         f'generate {test_num} '
         f'{"trained" if train_it else "random"} neural networks')
 
-# dataset_name, train_it, test_num, model_type, model_depth
 
 parser = argparse.ArgumentParser(
     description='A program that runs two different graph neural network '
