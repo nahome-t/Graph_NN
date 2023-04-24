@@ -1,19 +1,15 @@
 # Contains functions used to read and write data
-import argparse
 import os
 from pathlib import Path
 import pandas as pd
-# import scipy.optimize
 import torch, math
 import numpy as np
 from os.path import exists
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-
+from scipy.optimize import curve_fit
 from models import NormAdj
-from torch_geometric.datasets import Planetoid
+
 from os import listdir
 # from scipy.optimize import curve_fit
 
@@ -68,7 +64,6 @@ def get_file_name(dataset_name, train_it, model_type, model_depth, rank=None,
     extension = f'{prefix}{dataset_name}' \
                 f'_{"trained" if train_it else "random"}_' \
                 f'{model_type}_{model_depth}'
-
     if rank is not None:
         extension += f'_{rank}'
     program_path = Path(__file__)
@@ -158,7 +153,6 @@ def test_accuracy(model, data, epoch_num=None, on_training_data=True):
     return acc
 
 
-
 def applyAdjLayer(data, depth):
     # Applies normalised adjacency layer depth amount of times, maybe should
     # be in models rather than data_handler
@@ -182,26 +176,27 @@ def calc_row_err(probability, test_size, depth=10, z=1):
                                            test_size)
         err[1] = probability + z * np.sqrt(err[1] * (1 - err[1]) /
                                            test_size)
-
     return err
 
 
-def theoretical_val(func_len, output_len, cut_off_rank=1, p_vio=0, classes=2,
-                    alpha=-1):
+def theoretical_zipf(func_len, output_len, cut_off_rank=1, p_vio=0, classes=2,
+                    alpha=1):
 
-    C = (1 - p_vio) / (func_len * math.log(classes) - math.log(cut_off_rank))
-
+    # This is the rank or the x-axis
     x = np.arange(1, output_len + 1)
-    y = C / x
-    print(x)
-    print(C)
+    if alpha == 1:
+        C = (1 - p_vio) / (func_len * math.log(classes) - math.log(cut_off_rank))
+        y = C / x
+
+    else:
+        a = 1-alpha
+        C = a*(1-p_vio)/(2**(func_len*a) - cut_off_rank**(a))
+        y = C/(np.power(x, alpha))
+
     return x, y
 
 
 def produce_rankVProb_plot(*arrays, labels=None,
-                           title="Rank vs Probability",
-                           xlabel="Rank",
-                           ylabel="Probability",
                            log_scale=True,
                            cumulative=False,
                            error=False,
@@ -210,7 +205,6 @@ def produce_rankVProb_plot(*arrays, labels=None,
                            extra=None, c=30):
 
     arrays = list(arrays)
-
     test_size = np.zeros(len(arrays))
     for i in range(len(arrays)):
 
@@ -247,11 +241,10 @@ def produce_rankVProb_plot(*arrays, labels=None,
         if theoretical:
             if function_length == None:
                 raise TypeError("Function length isn't specified...")
-            x_fit, y_fit = theoretical_val(func_len=function_length[i],
-                                           output_len=len(
-                                               arrays[i]),
-                                           p_vio=arrays[i][:c].sum(),
-                                           cut_off_rank=c + 1)
+            x_fit, y_fit = theoretical_zipf(func_len=function_length[i],
+                                            output_len=len(
+                                                arrays[i]), cut_off_rank=c + 1,
+                                            p_vio=arrays[i][:c].sum())
             plt.plot(x_fit, y_fit, linestyle='dotted', color=p[0].get_color())
 
             print(f'Violating probabilities '
@@ -280,30 +273,19 @@ def permutational_order(arr):
         arr[i] = np.array([val_map[val] for val in arr[i]])
     return arr
 
+def reduced_mask(dataset_name, group_size, data=None,
+                 num_classes=None):
+    # This produces a mask that reduces the size of the test mask into a new
+    # 'reduced_mask' such that each class appears group_size amount of times
 
-def reduced_mask(dataset_name, group_size, org_group_size=20, data=None):
-    # This produces a mask that takes in a function which has size of
-    # org_group_size*num_classes and reduces it so that its now
-    # group_size*num_classes, i.e. just reduces size of function so that in
-    # our new function it has a certain amount of each function
-    if data is None:
-        dataset = Planetoid(root=f'/tmp/{dataset_name}', name=dataset_name)
-        print('Getting reduced mask :)')
-        data = dataset[0]
-        num_classes = dataset.num_classes
-    else:
-        num_classes = 2
-    # This is the mask with 20 lots of each class which is the original amount
-    m1 = generate_mask(data_y=data.y, group_size=org_group_size,
-                       num_classes=num_classes,
-                       mask=data.train_mask, name=dataset_name).numpy()
+    test_mask = data.test_mask.numpy()
 
     # This is subset of original mask
     m2 = generate_mask(data_y=data.y, group_size=group_size,
                        num_classes=num_classes,
-                       mask=m1, name=dataset_name).numpy()
+                       mask=test_mask, name=dataset_name, reader=True).numpy()
     print(np.unique(data.y[m2].numpy(), return_counts=True))
-    return m2[m1]
+    return m2[test_mask]
 
 
 def bring_together_file(dataset_name, train_it, model_type, model_depth,
@@ -336,7 +318,8 @@ def bring_together_file(dataset_name, train_it, model_type, model_depth,
                                  model_depth,
                                  prefix=output_prefix, rank=rank)
     print(output_fname)
-    print(len(combined_txt) / 240)
+    print(f'File has {len(combined_txt) / 240} functions in it (assuming '
+          f'function length is 120)')
     # # write the combined text to a new file
     # Add a section here that asks you to confirm before you send it off if
     # it already exists (prevents multiple writes to the same file)
@@ -354,30 +337,31 @@ def bring_together_file(dataset_name, train_it, model_type, model_depth,
         for file in files:
             os.remove(file)
 
-
-def wrap_it_all_up_Cite(train_it, model_type, model_depth,
-                        output_prefix=None,
-                        freq_prefix=None, group_size=None):
+def wrap_it_all_up(dataset_name, train_it, model_type, model_depth,
+                        output_prefix, freq_prefix, group_size,
+                        org_group_size, data):
     if output_prefix is None:
-        output_prefix = '/output'
+        output_prefix = '/output/'
 
     if freq_prefix is None:
         freq_prefix = '/freq/'
+
     if group_size is None:
         print('No group size given, assuming no mask needed')
 
     # Brings together file and outputs it in the same spot as all the outputs
-    bring_together_file('CiteSeer', train_it, model_type, model_depth,
+    bring_together_file(dataset_name, train_it, model_type, model_depth,
                         f_prefix=output_prefix, output_prefix=output_prefix)
     print('ggg')
     # Gets this file
-    combined_file = get_file_name("CiteSeer", train_it, model_type, model_depth,
+    combined_file = get_file_name(dataset_name, train_it, model_type, model_depth,
                                   prefix=output_prefix)
     # Counts frequency
     freq1 = count_frequency(combined_file, binarised=True, mask=reduced_mask(
-        'CiteSeer', group_size=group_size))
+        dataset_name, group_size=group_size, org_group_size=org_group_size,
+        data=data, num_classes=data.num_classes))
 
-    np.save(arr=freq1, file=get_file_name("CiteSeer", train_it, model_type,
+    np.save(arr=freq1, file=get_file_name(dataset_name, train_it, model_type,
                                           model_depth, rank=group_size,
                                           prefix=freq_prefix))
 
@@ -403,6 +387,7 @@ def wrap_it_all_up_Cite(train_it, model_type, model_depth,
 # f2 = get_file_name('CiteSeer_OFF', train_it, model, depth, prefix='/plots/')
 # produce_rankVProb_plot(freq1, theoretical=True, function_length=24, labels=[
 #     f'{model}, depth: {depth}, function length: 24'])
+
 
 
 # parser2 = argparse.ArgumentParser(
@@ -441,90 +426,84 @@ def wrap_it_all_up_Cite(train_it, model_type, model_depth,
 #                         freq_prefix=args2.freq_prefix, rank=args2.rank,
 #                         group_size=args2.group_size)
 
-def produce_probVprob(x, y, unq, true_data, fname=None, log_scale=True,
-                      title=None,
-                      label=None, s=None):
+def produce_probVprob(x, y, unq, true_data, fname=None,
+                      title=None, label=None, s=None, theoretical=False,
+                      binarised=False):
+    alpha=1
     # Produces probability vs probability plot for same model but comparing
     # trained and untrained
-    print('I HAVE NOW ENTERED A BINARISED BASED FEATURE')
 
     fig, ax = plt.subplots()
     ax.set_box_aspect(1)
     cmap = LinearSegmentedColormap.from_list("",
                                              ["red", "orange", "gold",
                                                                "green"])
-    power = 1
-    _f = lambda x: np.power(x, power)
-    _b = lambda x: np.power(x, 1/power)
-    norm = mpl.colors.FuncNorm((_f, _b), vmin=0.45, vmax=1)
+    # If we want to scale our axis use this code and come up with scaling
+    # funcion
+    # power = 1
+    # _f = lambda x: 1/(1+np.exp(-x))
+    # _b = lambda x: np.log(x/(1-x))
+    # norm = mpl.colors.FuncNorm((_f, _b), vmin=0.45, vmax=1)
 
-    plt.xlim([10 ** (-5.5), 1])
-    plt.ylim([10 ** (-5.5), 1])
+    norm=None
+    ranges = [10 ** (-5.5), 1]
+    plt.xlim(ranges)
+    plt.ylim(ranges)
+
+    if theoretical:
+        plt.plot(ranges, ranges, linestyle='--')
+
+    if binarised:
+        true_data = true_data%2
+
     if unq is not None:
         acc = torch.zeros(unq.shape[0])
         for i in range(len(acc)):
-            acc[i] = (unq[i] == true_data%2).sum()/int(true_data.size(dim=0))
-
+            acc[i] = (unq[i] == true_data).sum()/int(true_data.size(dim=0))
     else:
         acc=None
 
     if label:
-        im = plt.scatter(x, y, label="lol", c=acc, s=s, cmap=cmap, norm=norm)
+        im = plt.scatter(x, y, label="lol", c=acc, s=s, cmap=cmap, norm=norm,
+                         alpha=alpha)
         plt.legend()
-    else:
-        if s is not None:
-            im = plt.scatter(x, y, s=s, c=acc, cmap=cmap, norm=norm)
+
     if unq is not None:
         # divider = make_axes_locatable(ax)
         # cax = divider.append_axes("right", size="5%", pad=0.05)
 
         # norm = mpl.colors.Normalize(vmin=0.45, vmax=1)
         cbar = fig.colorbar(im, ax=ax, shrink=0.9)
-        cbar.ax.set_ylabel('Model accuracy on benchmark data')
+        cbar.ax.set_ylabel('Model accuracy on benchmark data', labelpad=10)
         ax.get_legend().remove()
 
     if title is not None:
         plt.title(title)
 
-    if log_scale:
-        plt.xscale('log')
-        plt.yscale('log')
+    plt.xscale('log')
+    plt.yscale('log')
 
     plt.xlabel('P(f|T) for GCN')
     plt.ylabel('P(f|T) for GfNN')
 
-    # ax.set_xlim([1, 10**5])
-    # ax.set_ylim([10**(-5), 1])
-
     if fname:
-        fig.set_size_inches(3, 3)
+        fig.set_size_inches(5, 5)
         plt.savefig(fname, bbox_inches='tight', dpi=300)
     plt.show()
 
-    #
-    # norm = colors.BoundaryNorm(np.arange(0,maxerr+1,1), cmap.N)
-    # sp = ax.scatter(df['x'], df['y'], c=df['Error'], cmap=cmap, norm=norm, edgecolor='none')
 
-    #
-    # #plt.colorbar(im, cax=cax)
-    #
-    # cbar.set_label(f'Error (of {number_of_test_examples})')
-
-
-def count_same_p(dataset_name, model_depth, prefix,
-                 group_size, freq_prefix=None):
+def count_same_p(dataset_name, model_depth, prefix, mask, freq_prefix=None,):
     if freq_prefix is None:
         print('you havent written frequnency prefix, this wont get saved')
     fname1 = get_file_name(dataset_name, True, 'GCN', model_depth,
                            prefix=prefix)
     fname2 = get_file_name(dataset_name, True, 'GfNN', model_depth,
                            prefix=prefix)
-    unq1, freq1 = count_frequency(fname1, mask=reduced_mask(dataset_name,
-                                                            group_size),
+
+    unq1, freq1 = count_frequency(fname1, mask=mask,
                                   binarised=True, return_unq=True,
                                   special=10 ** 5)
-    unq2, freq2 = count_frequency(fname2, mask=reduced_mask(dataset_name,
-                                                            group_size),
+    unq2, freq2 = count_frequency(fname2, mask=mask,
                                   binarised=True, return_unq=True,
                                   special=10 ** 5)
     print(freq1.shape)
@@ -560,130 +539,59 @@ def count_same_p(dataset_name, model_depth, prefix,
 
     return res, unq
 
+
+def fit_zipf(func_len, output_len, r_min, freq):
+
+    # Bounds the outputted value to the following
+    bounds = ([0.5], [0.99])
+    n_trials = freq.sum()
+    p = freq/n_trials
+
+    # FINISH THIS
+    p_vio = p[:r_min].sum()
+
+    x_data = np.arange(r_min, len(freq))
+    y_data = p[r_min:]
+    uncertainty = np.sqrt(p*(1-p)/n_trials)
+
+    def model(alpha):
+        _, y = theoretical_zipf(func_len, output_len, r_min, p_vio,
+                                classes=2)
+        return y
+
+
+    popt, pcov = curve_fit(model, xdata=x_data,
+                           ydata=y_data, bounds=bounds, sigma=uncertainty)
+    print(np.sqrt(pcov))
+    print(popt)
+    rank = np.arange(1, len(freq) +1)
+    produce_rankVProb_plot(p, extra=model(rank, popt[0]))
+
+    count_same_p('CiteSeer', model_depth=2,
+                 prefix='/output_final/', group_size=4)
+    bring_together_file('Synth', False, 'GCN', 2, '/synth_output/output/',
+                        '/output_final/', save_it=True)
+
 output_prefix = '/output_final/'
 dataset_name = 'CiteSeer'
 model_depth = 6
-group_size = 4
+group_size = 8
 freq_prefix = '/output_final/freq/'
 train_it = False
 model_type = 'GfNN'
 
 
 #============================================================================#
-# def save_freq(model_type, model_depth, group_size):
-#     fname1 = get_file_name('CiteSeer', train_it, model_type, model_depth,
-#                            prefix=output_prefix)
-#
-#     f0 = count_frequency(fname1, binarised=True, special=5*10**5,
-#                          mask=reduced_mask('CiteSeer', group_size=group_size))
-#
-#     f_output = get_file_name('CiteSeer', train_it=train_it,
-#                              model_type=model_type,
-#                              model_depth=model_depth, rank=group_size,
-#                              prefix='/output_final_hopefully/freq/')
-#     np.save(file=f_output, arr=f0)
-# group_size = 6
-# save_freq('GfNN', 6, group_size)
-# save_freq('GCN', 6, group_size)
-# save_freq('GfNN', 2, group_size)
-# save_freq('GCN', 2, group_size)
-#---------------------------------------------------------------------------#
-# Code for producing final form of plots
-model_depth=2
-
-# f1 = get_file_name('CiteSeer', train_it=False,
-#                             model_type='GCN',
-#                             model_depth=model_depth,
-#                             prefix='/output_final_hopefully/freq/', rank=group_size)
-# f2 = get_file_name('CiteSeer', train_it=False,
-#                             model_type='GfNN',
-#                             model_depth=model_depth,
-#                             prefix='/output_final_hopefully/freq/', rank=group_size)
-#
-# freq1 = np.load(f1+".npy")
-# freq2 = np.load(f2+".npy")
-#
-#
-# # f3 = count_frequency(fname=)
-# basis = f'GCN, depth {model_depth}, function length: {group_size*6}'
-# basis2 = f'GfNN, depth {model_depth}, function length: {group_size*6}'
-#
-# produce_rankVProb_plot(freq1, freq2,
-#                        labels=[basis, basis2],
-#                        theoretical=True, function_length=[group_size*6,
-#                                                           group_size*6],
-#                        c=40)
-#
-# print(get_file_name(dataset_name, train_it='both',
-#                               model_type=model_type,
-#                                           model_depth=model_depth, rank=4,
-#                                           prefix='/freq/'))
-
-
-#-------------------------------------------------------------------------#
-# z, unq = count_same_p('CiteSeer', model_depth, output_prefix,
-#                    group_size=group_size)
-# fname = get_file_name('CiteSeer', True, 'both', model_depth, prefix='/plots/')
-#
-# dataset = Planetoid(root=f'/tmp/{dataset_name}', name=dataset_name)
-# data = dataset[0]
-# # mask = generate_mask(data_y=data.y, )
-# print(fname)
-# print(z.shape)
-# x, y = z
-# true_data = data.y[generate_mask(data_y=data.y, num_classes=6,
-#                                  name='CiteSeer', group_size=20,
-#                                  mask=data.test_mask)][
-#     reduced_mask('CiteSeer', group_size)]
-#
-# produce_probVprob(x, y, fname=fname, s=8, unq=unq, true_data=true_data,
-#                   label=['hey'])
 
 
 
-# # --------------------------------------------------------------------------- #
-# fname = get_file_name('CiteSeer', train_it=False, model_type='GCN', \
-#     model_depth=2, prefix='/output_final_hopefully/freq/') + ".npy"
-
-# fname2 = get_file_name('CiteSeer', train_it=False, model_type='GCN', \
-#     model_depth=6,
-#                       prefix='/output_final/')
-
-# freq2 = count_frequency(fname2, perm_inv=True, special=10*10**5,
-#                         mask=reduced_mask('CiteSeer', 4))
-
-
-# freq1 = np.load(fname)
+# count_Synth('GCN', 6)
+# count_Synth('GfNN', 6)
 #
-# total = np.sum(freq1)
-# p1 = freq1/total
-# r_min = 70
-# l = 24
-# p_v = np.sum(p1[:r_min])
-#
-# sigma = np.sqrt(p1*(1-p1)/10**7)[r_min:]
-#
-# def model(x, alpha):
-#     a = 1-alpha
-#     C = a*(1-p_v)/(2**(l*a) - r_min**(a))
-#     output = C/(np.power(x, alpha))
-#     return output
+# count_Synth('GCN', 2)
+# count_Synth('GfNN', 2)
 
-# -----------------------------------------------------------------------#
-# code for fit
-# # bounds = ([0.5, 10**-3], [0.95, 10**-1])
-# bounds = ([0.5], [0.95])
-# popt, pcov = curve_fit(model, xdata=np.arange(r_min, len(freq1)),
-#                        ydata=p1[r_min:], bounds=bounds, sigma=sigma)
-# print(np.sqrt(pcov))
-# print(popt)
-# rank = np.arange(1, len(freq1) +1)
-# produce_rankVProb_plot(freq1, extra=model(rank, popt[0]))
-
-# count_same_p('CiteSeer', model_depth=2,
-#              prefix='/output_final/', group_size=4)
-# bring_together_file('Synth', False, 'GCN', 6, '/synth_output/output/',
-#                     '/output_final/', save_it=True)
+# produce_rankVProb_plot(f1, theoretical=True, function_length=[group_size*2])
 
 # Synth random GCN 2 7.8M
 # Synth random GfNN 2 7.8M
@@ -694,5 +602,6 @@ model_depth=2
 #                        model_depth=6, prefix='/output_final/')
 # f0 = count_frequency(fname1, special=5*10**5,
 #                          mask=reduced_mask('Synth', group_size=group_size,
-#                                            org_group_size=50, data=data))
-
+#                                            org_group_size=60, data=data))
+# bring_together_file('Synth', True, 'GCN', 2, f_prefix='/synth_output/output/',
+#                     output_prefix='/output_final/')

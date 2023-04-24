@@ -1,23 +1,16 @@
 import numpy as np
-from torch_geometric.datasets import Planetoid
 import torch
 import torch.nn.functional as F
 from models import GCN, GfNN
 from data_handler import test_accuracy, get_file_name, write_to_file
-from synthetic_data import make_data
+from synthetic_data import make_synth_data
 from data_handler import generate_mask
-# dataset = Planetoid(root='/tmp/CiteSeer', name='CiteSeer')
-# data = dataset[0] # Only one graph in this particular dataset so we just need
-# to load the first element
 
 
-data = torch.load(f='synth3')
 
+dataset_name = torch.load(input('Enter dataset name: '))
+data = torch.load(f=dataset_name)
 
-# data = make_data(n_points=1000, train_size=120, test_size=120)
-
-# data = torch.load(f='/Users/nahometewolde/PycharmProjects/Graph_NN'
-#                     '/synthetic_torch_trained')
 
 
 print(f' training: {torch.sum(data.train_mask)}, of which '
