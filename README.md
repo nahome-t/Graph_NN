@@ -16,6 +16,7 @@ The first part of the project involves looking at the frequency at which certain
 - Data Handler contains functions related to processing and recording the data, i.e. produces the mask which will show the dataset that we will test our neural networks on, will look at stored tensors and count the occurence of the 'functions' which are defined by their performance on the test set and can check as to whether some data is consistent with the data or the accuracy of a model. Also used to produce plots of rank v probability and perform changes to the data 
 - Main just used if you want to run the neural network a single time and train it on the Cora dataset, will offer you choice in what type, configured so that it will be trained, can be used as a means of testing whether a particular GNN behaves well
 - Runner is the code that will eventually be run on computer, will keep generating neural networks then looks at output on benchmark dataset, defined by benchmark_mask. Can currently run a test a specified amount of times and output the results into a file, can also download the file and look at how often each tensor or 'function' appears
+- Analysis brings it all together and produces the rankVprob and probVprob plots very simply, automatically reads files via data_handler and puts it all togther to produce plots
 
 # Stuff to-do
 ...
