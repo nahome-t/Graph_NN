@@ -270,8 +270,7 @@ def permutational_order(arr):
     return arr
 
 
-def reduced_mask(dataset_name, group_size, data=None,
-                 num_classes=None):
+def reduced_mask(dataset_name, group_size, data=None):
     # This produces a mask that reduces the size of the test mask into a new
     # 'reduced_mask' such that each class appears group_size amount of times
 
@@ -279,7 +278,7 @@ def reduced_mask(dataset_name, group_size, data=None,
 
     # This is subset of original mask
     m2 = generate_mask(data_y=data.y, group_size=group_size,
-                       num_classes=num_classes,
+                       num_classes=data.num_classes,
                        mask=test_mask, name=dataset_name, reader=True).numpy()
     print(np.unique(data.y[m2].numpy(), return_counts=True))
     return m2[test_mask]
@@ -322,9 +321,8 @@ def bring_together_file(dataset_name, train_it, model_type, model_depth,
     # it already exists (prevents multiple writes to the same file)
 
     if exists(output_fname):
-        if input('Enter y if you want to continue, this file already '
-                 'exists... ') != 'y':
-            return None
+        print('This file already exists so not generating a new one')
+        return None
 
     if save_it:
         with open(output_fname, 'a') as f:
@@ -336,10 +334,10 @@ def bring_together_file(dataset_name, train_it, model_type, model_depth,
 
 
 def wrap_it_all_up(dataset_name, train_it, model_type, model_depth,
-                   output_prefix, freq_prefix, group_size,
-                   org_group_size, data):
-    if output_prefix is None:
-        output_prefix = '/output/'
+                   input_prefix, final_prefix, freq_prefix, group_size):
+    data = torch.load(dataset_name)
+    if input_prefix is None:
+        input_prefix = '/output/'
 
     if freq_prefix is None:
         freq_prefix = '/freq/'
@@ -349,20 +347,20 @@ def wrap_it_all_up(dataset_name, train_it, model_type, model_depth,
 
     # Brings together file and outputs it in the same spot as all the outputs
     bring_together_file(dataset_name, train_it, model_type, model_depth,
-                        f_prefix=output_prefix, output_prefix=output_prefix)
+                        f_prefix=input_prefix, output_prefix=final_prefix)
     print('ggg')
     # Gets this file
     combined_file = get_file_name(dataset_name, train_it, model_type,
                                   model_depth,
-                                  prefix=output_prefix)
+                                  prefix=final_prefix)
     # Counts frequency
     freq1 = count_frequency(combined_file, binarised=True, mask=reduced_mask(
-        dataset_name, group_size=group_size, org_group_size=org_group_size,
-        data=data, num_classes=data.num_classes))
+        dataset_name, group_size=group_size, data=data), special)
 
     np.save(arr=freq1, file=get_file_name(dataset_name, train_it, model_type,
                                           model_depth, rank=group_size,
                                           prefix=freq_prefix))
+
 
 
 # wrap_it_all_up_Cite(False, 'GfNN', 2, output_prefix='/output5/output/',
@@ -552,7 +550,7 @@ def fit_zipf(func_len, output_len, r_min, freq):
 
     def model(alpha):
         _, y = theoretical_zipf(func_len, output_len, r_min, p_vio,
-                                classes=2)
+                                classes=2, alpha=alpha)
         return y
 
     popt, pcov = curve_fit(model, xdata=x_data,
