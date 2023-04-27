@@ -253,7 +253,7 @@ def produce_rankVProb_plot(*arrays, labels=None,
         plt.xscale('log')
         plt.yscale('log')
     if fname:
-        fig.set_size_inches(3, 3)
+        fig.set_size_inches(5, 5)
         plt.savefig(fname, bbox_inches='tight', dpi=300)
     plt.show()
 
@@ -355,7 +355,7 @@ def wrap_it_all_up(dataset_name, train_it, model_type, model_depth,
                                   prefix=final_prefix)
     # Counts frequency
     freq1 = count_frequency(combined_file, binarised=True, mask=reduced_mask(
-        dataset_name, group_size=group_size, data=data), special)
+        dataset_name, group_size=group_size, data=data))
 
     np.save(arr=freq1, file=get_file_name(dataset_name, train_it, model_type,
                                           model_depth, rank=group_size,
@@ -456,6 +456,7 @@ def produce_probVprob(x, y, unq, true_data, fname=None,
         acc = torch.zeros(unq.shape[0])
         for i in range(len(acc)):
             acc[i] = (unq[i] == true_data).sum() / int(true_data.size(dim=0))
+        print(acc)
     else:
         acc = None
 
@@ -488,19 +489,18 @@ def produce_probVprob(x, y, unq, true_data, fname=None,
     plt.show()
 
 
-def count_same_p(dataset_name, model_depth, prefix, mask, freq_prefix=None ):
-    if freq_prefix is None:
-        print('you havent written frequnency prefix, this wont get saved')
+def count_same_p(dataset_name, model_depth, input_prefix, mask,
+                 binarised=True):
     fname1 = get_file_name(dataset_name, True, 'GCN', model_depth,
-                           prefix=prefix)
+                           prefix=input_prefix)
     fname2 = get_file_name(dataset_name, True, 'GfNN', model_depth,
-                           prefix=prefix)
+                           prefix=input_prefix)
 
     unq1, freq1 = count_frequency(fname1, mask=mask,
-                                  binarised=True, return_unq=True,
+                                  binarised=binarised, return_unq=True,
                                   special=10 ** 5)
     unq2, freq2 = count_frequency(fname2, mask=mask,
-                                  binarised=True, return_unq=True,
+                                  binarised=binarised, return_unq=True,
                                   special=10 ** 5)
     print(freq1.shape)
     print(freq2.shape)
@@ -525,12 +525,6 @@ def count_same_p(dataset_name, model_depth, prefix, mask, freq_prefix=None ):
     # Converts list of functions to list of strings
     unq = torch.tensor([[int(x) for x in s] for s in df['f']])
     res = np.array([df['c_x'], df['c_y']])
-
-    # if freq_prefix:
-    #     np.save(get_file_name(dataset_name, train_it='both',
-    #                           model_type='both',
-    #                                       model_depth=model_depth, rank=group_size,
-    #                                       prefix=freq_prefix), res)
 
     return res, unq
 
@@ -560,10 +554,7 @@ def fit_zipf(func_len, output_len, r_min, freq):
     rank = np.arange(1, len(freq) + 1)
     produce_rankVProb_plot(p, extra=model(rank, popt[0]))
 
-    count_same_p('CiteSeer', model_depth=2,
-                 prefix='/output_final/', group_size=4)
-    bring_together_file('Synth', False, 'GCN', 2, '/synth_output/output/',
-                        '/output_final/', save_it=True)
+
 
 output_prefix = '/output_final/'
 dataset_name = 'CiteSeer'
@@ -574,24 +565,3 @@ train_it = False
 model_type = 'GfNN'
 
 # ============================================================================#
-
-# count_Synth('GCN', 6)
-# count_Synth('GfNN', 6)
-#
-# count_Synth('GCN', 2)
-# count_Synth('GfNN', 2)
-
-# produce_rankVProb_plot(f1, theoretical=True, function_length=[group_size*2])
-
-# Synth random GCN 2 7.8M
-# Synth random GfNN 2 7.8M
-# data = torch.load('synthetic_torch')
-# print(data)
-# group_size=20
-# fname1 = get_file_name('Synth', train_it=False, model_type='GCN',
-#                        model_depth=6, prefix='/output_final/')
-# f0 = count_frequency(fname1, special=5*10**5,
-#                          mask=reduced_mask('Synth', group_size=group_size,
-#                                            org_group_size=60, data=data))
-# bring_together_file('Synth', True, 'GCN', 2, f_prefix='/synth_output/output/',
-#                     output_prefix='/output_final/')

@@ -48,7 +48,7 @@ data = data.to(device)
 def train(model, data, v2=False):
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     model.train()
-    test_accuracy(model=model, data=data, epoch_num=0, on_training_data=True)
+    test_accuracy(model=model, data=data, epoch_num=0, on_training_data=False)
     for epoch in range(num_epochs):
         optimizer.zero_grad()
         output = model(data)
@@ -58,7 +58,7 @@ def train(model, data, v2=False):
         loss = F.nll_loss(output[data.train_mask], data.y[data.train_mask])
         loss.backward()  # Calculates the gradients
         optimizer.step()  # Updates the model via gradient descent
-        test_accuracy(model, data, epoch+1, on_training_data=True)  # +1
+        test_accuracy(model, data, epoch+1, on_training_data=False)  # +1
         # because epoch should start
         # from 1
     # test_accuracy(model, data, num_epochs)
