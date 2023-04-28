@@ -23,6 +23,9 @@ def generate_mask(data_y, mask, num_classes, name, group_size=20, reader=False):
         return torch.from_numpy(np.load(f'benchmark_mask:{name}_'
                                         f'{group_size}_{num_classes}.npy'))
 
+    if mask == None:
+        mask = [True]*len(data_y) # Basically saying if mask is none allow
+        # every node to come through
     data_y = data_y.tolist()
     mask = mask.tolist()
     test_mask = [False] * len(data_y)

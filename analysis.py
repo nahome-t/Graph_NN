@@ -3,7 +3,6 @@ import torch
 from data_handler import get_file_name, count_same_p, produce_rankVProb_plot,\
     produce_probVprob, wrap_it_all_up, count_frequency, bring_together_file
 import data_handler
-import matplotlib.pyplot as plt
 
 # data=torch.load('CiteSeer')
 # x, y = data.edge_index

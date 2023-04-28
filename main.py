@@ -5,10 +5,36 @@ from models import GCN, GfNN
 from data_handler import test_accuracy, get_file_name, write_to_file
 from synthetic_data import make_synth_data
 from data_handler import generate_mask
+from synth_data import generate_data, mapping2
 
 
-dataset_name = input('Enter dataset name: ')
-data = torch.load(f=dataset_name)
+# dataset_name = input('Enter dataset name: ')
+# data = torch.load(dataset_name)
+# data = make_synth_data(n_points=2000, train_size=100, test_size=100, nneigh=3)
+
+c_var_scale = 2
+dim=5
+data = generate_data(1000, pos_scale=1, class_var_scale=c_var_scale, eta=2,
+                     near_neighbours=4, train_size=120, map=mapping2,
+                     dim=dim)
+gap = 0.01
+s = data.y.sum()/data.y.size(dim=0)
+while(not 0.499<s<0.501):
+    print(f'not close enough, trying again, got a mix of {s} for '
+          f'class_var_scale of {c_var_scale}')
+    if s<0.49:
+        interval = gap
+    else:
+        interval = -gap
+    c_var_scale += interval
+    data = generate_data(1000, pos_scale=1, class_var_scale=c_var_scale, eta=2,
+                         near_neighbours=4, train_size=120, map=mapping2,
+                         dim=dim)
+    s = data.y.sum() / data.y.size(dim=0)
+
+print(f'got a mix of {s} for '
+          f'class_var_scale of {c_var_scale}')
+
 
 
 print(f' training: {torch.sum(data.train_mask)}, of which '
@@ -18,14 +44,13 @@ print(f' testing: {torch.sum(data.test_mask)}, of which '
       f'{np.unique(data.y[data.test_mask].numpy(), return_counts=True)} '
       f'is the class distribution')
 
-print(data)
 learning_rate = 0.01 # Figure out good value?
 
-num_epochs = 300 # Number of epochs over which data will be trained on,
+num_epochs = 150 # Number of epochs over which data will be trained on,
 # should eventually be changed so that it is a variable number which stops
 # once 100% accuracy reached in training data, or we reach some max limit
 
-hidden_layer_size = 128  # Size of hidden convolution layers (all same size)
+hidden_layer_size = 120  # Size of hidden convolution layers (all same size)
 in_features = data.num_features
 out_features = data.num_classes
 depth = int(input('Enter the depth of neural network: '))
@@ -48,7 +73,7 @@ data = data.to(device)
 def train(model, data, v2=False):
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     model.train()
-    test_accuracy(model=model, data=data, epoch_num=0, on_training_data=False)
+    test_accuracy(model=model, data=data, epoch_num=0, on_training_data=True)
     for epoch in range(num_epochs):
         optimizer.zero_grad()
         output = model(data)
@@ -58,13 +83,13 @@ def train(model, data, v2=False):
         loss = F.nll_loss(output[data.train_mask], data.y[data.train_mask])
         loss.backward()  # Calculates the gradients
         optimizer.step()  # Updates the model via gradient descent
-        test_accuracy(model, data, epoch+1, on_training_data=False)  # +1
+        test_accuracy(model, data, epoch+1, on_training_data=True)  # +1
         # because epoch should start
         # from 1
     # test_accuracy(model, data, num_epochs)
 
 train(model=model, data=data)
-
+print(data)
 # def runner2(n_points, pos_scale, class_var_scale, train_mask_size,
 #             near_neighbours, model_type, model_depth, test_num):
 #
