@@ -23,7 +23,7 @@ def generate_mask(data_y, mask, num_classes, name, group_size=20, reader=False):
         return torch.from_numpy(np.load(f'benchmark_mask:{name}_'
                                         f'{group_size}_{num_classes}.npy'))
 
-    if mask == None:
+    if mask is None:
         mask = [True]*len(data_y) # Basically saying if mask is none allow
         # every node to come through
     data_y = data_y.tolist()
@@ -483,8 +483,8 @@ def produce_probVprob(x, y, unq, true_data, fname=None,
     plt.xscale('log')
     plt.yscale('log')
 
-    plt.xlabel('P(f|T) for GCN')
-    plt.ylabel('P(f|T) for GfNN')
+    plt.xlabel('P(f|S) for GCN')
+    plt.ylabel('P(f|S) for GfNN')
 
     if fname:
         fig.set_size_inches(5, 5)

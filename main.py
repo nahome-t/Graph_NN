@@ -8,33 +8,8 @@ from data_handler import generate_mask
 from synth_data import generate_data, mapping2
 
 
-# dataset_name = input('Enter dataset name: ')
-# data = torch.load(dataset_name)
-# data = make_synth_data(n_points=2000, train_size=100, test_size=100, nneigh=3)
-
-c_var_scale = 2
-dim=5
-data = generate_data(1000, pos_scale=1, class_var_scale=c_var_scale, eta=2,
-                     near_neighbours=4, train_size=120, map=mapping2,
-                     dim=dim)
-gap = 0.01
-s = data.y.sum()/data.y.size(dim=0)
-while(not 0.499<s<0.501):
-    print(f'not close enough, trying again, got a mix of {s} for '
-          f'class_var_scale of {c_var_scale}')
-    if s<0.49:
-        interval = gap
-    else:
-        interval = -gap
-    c_var_scale += interval
-    data = generate_data(1000, pos_scale=1, class_var_scale=c_var_scale, eta=2,
-                         near_neighbours=4, train_size=120, map=mapping2,
-                         dim=dim)
-    s = data.y.sum() / data.y.size(dim=0)
-
-print(f'got a mix of {s} for '
-          f'class_var_scale of {c_var_scale}')
-
+dataset_name = input('Enter dataset name: ')
+data = torch.load(dataset_name)
 
 
 print(f' training: {torch.sum(data.train_mask)}, of which '
@@ -50,7 +25,7 @@ num_epochs = 150 # Number of epochs over which data will be trained on,
 # should eventually be changed so that it is a variable number which stops
 # once 100% accuracy reached in training data, or we reach some max limit
 
-hidden_layer_size = 120  # Size of hidden convolution layers (all same size)
+hidden_layer_size = 300  # Size of hidden convolution layers (all same size)
 in_features = data.num_features
 out_features = data.num_classes
 depth = int(input('Enter the depth of neural network: '))

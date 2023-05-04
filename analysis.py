@@ -41,21 +41,24 @@ def produce_final_rankVprob(*args, dataset_name, freq_prefix, num_classes,
                         fname=fname, theoretical=True, error=error)
 
 
-# wrap_it_all_up('CiteSeer', False, 'GCN', 6, '/output_CiteSeer/',
-#                '/output_final2/', '/freq2/', group_size=20)
-# wrap_it_all_up('CiteSeer', False, 'GCN', 2, '/output_CiteSeer/',
-#                '/output_final2/', '/freq2/', group_size=20)
-# wrap_it_all_up('CiteSeer', False, 'GfNN', 2, '/output_CiteSeer/',
-#                '/output_final2/', '/freq2/', group_size=20)
-# wrap_it_all_up('CiteSeer', False, 'GfNN', 6, '/output_CiteSeer/',
-#                '/output_final2/', '/freq2/', group_size=20)
+# wrap_it_all_up('Synth_d5', False, 'GCN', 6, '/output_SynthD5/output/',
+#                '/output_final2/', '/freq2/', group_size=60)
+# wrap_it_all_up('Synth_d5', False, 'GCN', 2, '/output_SynthD5/output/',
+#                '/output_final2/', '/freq2/', group_size=60)
+# wrap_it_all_up('Synth_d5', False, 'GfNN', 2, '/output_SynthD5/output/',
+#                '/output_final2/', '/freq2/', group_size=60)
+# wrap_it_all_up('Synth_d5', False, 'GfNN', 6, '/output_SynthD5/output/',
+#                '/output_final2/', '/freq2/', group_size=60)
 
+#
+# produce_final_rankVprob(('GCN', 2, 12), ('GfNN', 2, 12), ('GCN', 2, 60),
+#                         ('GfNN', 2, 60),
+#                         dataset_name='Synth_d5', freq_prefix='/freq2/',
+#                         num_classes=2, plots_prefix='/plots2/')
 
-produce_final_rankVprob(('GCN', 2, 4), ('GCN', 2, 20),
-                        dataset_name='CiteSeer', freq_prefix='/freq2/',
-                        num_classes=6, plots_prefix='/plots2/')
-
-
+# bring_together_file('Synth_d5', train_it=True, model_type='GfNN',
+#                     model_depth=2, f_prefix='/output_SynthD5_trained/output/',
+#                     output_prefix='/output_final2/')
 
 
 def produce_final_probVprob(model_depth, dataset_name,
@@ -83,14 +86,3 @@ def produce_final_probVprob(model_depth, dataset_name,
                       label=['hey'], theoretical=True, binarised=binarised)
 
 
-# bring_together_file('Synth', True, 'GCN', 6, f_prefix='/output_CiteSeer/',
-#                     output_prefix='/output_final2/')
-
-# produce_final_probVprob(model_depth=6, dataset_name='Synth', group_size=20,
-#                         input_prefix='/output_final2/', binarised=False,
-                        # plots_prefix='/plots2/')
-
-
-# plots_prefix='/plots2/'
-# produce_final_probVprob(2, 'Synth', 12, '/output_final2/',
-#                         plots_prefix='/plots2/')
