@@ -3,9 +3,7 @@ import torch
 import torch.nn.functional as F
 from models import GCN, GfNN
 from data_handler import test_accuracy, get_file_name, write_to_file
-from synthetic_data import make_synth_data
-from data_handler import generate_mask
-from synth_data import generate_data, mapping2
+
 
 
 dataset_name = input('Enter dataset name: ')
@@ -25,7 +23,7 @@ num_epochs = 150 # Number of epochs over which data will be trained on,
 # should eventually be changed so that it is a variable number which stops
 # once 100% accuracy reached in training data, or we reach some max limit
 
-hidden_layer_size = 300  # Size of hidden convolution layers (all same size)
+hidden_layer_size = 120  # Size of hidden convolution layers (all same size)
 in_features = data.num_features
 out_features = data.num_classes
 depth = int(input('Enter the depth of neural network: '))
@@ -59,8 +57,7 @@ def train(model, data, v2=False):
         loss.backward()  # Calculates the gradients
         optimizer.step()  # Updates the model via gradient descent
         test_accuracy(model, data, epoch+1, on_training_data=True)  # +1
-        # because epoch should start
-        # from 1
+        # because epoch should start from 1
     # test_accuracy(model, data, num_epochs)
 
 train(model=model, data=data)
